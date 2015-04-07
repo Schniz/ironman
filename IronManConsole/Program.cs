@@ -10,7 +10,8 @@ namespace IronManConsole
     {
         static void Main(string[] args)
         {
-            Console.WriteLine("Avihay ha loser");
+            new App().run();
+            Console.Read();
         }
     }
 }
