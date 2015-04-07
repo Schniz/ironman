@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Drawing;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -11,6 +12,10 @@ namespace IronManConsole
     {
         const int WIDTH = 640;
         const int HEIGHT = 480;
+
+        private Win32framework win;
+
+        private MedianStuff cursorMedian = new MedianStuff();
 
         private PXCMSession _session;
         private PXCMSenseManager _mngr;
@@ -24,6 +29,7 @@ namespace IronManConsole
 
         public Camera(params PXCMHandConfiguration.OnFiredGestureDelegate[] dlgts)
         {
+            this.win = new Win32framework();
             this.delegates = dlgts;
 
             // Create the manager
@@ -100,17 +106,30 @@ namespace IronManConsole
             this._handData.QueryHandData(PXCMHandData.AccessOrderType.ACCESS_ORDER_BY_TIME, 0, out currentHandData);
             currentHandData.QueryTrackedJoint(PXCMHandData.JointType.JOINT_INDEX_TIP, out indexFingerJointData);
             var positionImage = indexFingerJointData.positionImage;
-            Console.WriteLine("{0} {1}", positionImage.x, positionImage.y);
+            //Console.WriteLine("{0} {1}", positionImage.x, positionImage.y);
+
+            int x = (int)(((WIDTH - positionImage.x) / WIDTH) * System.Windows.Forms.Screen.PrimaryScreen.Bounds.Width);
+            int y = (int)((positionImage.y / HEIGHT) * System.Windows.Forms.Screen.PrimaryScreen.Bounds.Height);
         }
 
         private void onFiredGesture(PXCMHandData.GestureData gestureData)
         {
+            PXCMHandData.IHand currentHandData;
             Console.WriteLine(gestureData.name + ": " + gestureData.state);
+            this._handData.QueryHandDataById(gestureData.handId, out currentHandData);
+
+            foreach (var currentDelegate in this.delegates)
+            {
+                currentDelegate(gestureData);
+            }
         }
 
         private void onFiredAlert(PXCMHandData.AlertData alertData)
         {
-            // Console.WriteLine("ALERT: " + alertData.label.ToString());
+            if (alertData.label == PXCMHandData.AlertType.ALERT_HAND_TRACKED)
+            {
+                Console.WriteLine("STARTED");
+            };
         }
 
         ~Camera()
