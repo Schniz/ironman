@@ -6,26 +6,66 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Drawing;
 using System.Runtime.InteropServices;
+using System.Threading;
 
 namespace IronManConsole
 {
+
+
     public class Win32framework
     {
         #region Consts
+        // Mouse clicks
+        const uint MOUSEEVENTF_LEFTDOWN = 0x0008;
+        const uint MOUSEEVENTF_LEFTUP = 0x0010;
+        const uint MOUSEEVENTF_RIGHTDOWN = 0x0002;
+        const uint MOUSEEVENTF_RIGHTUP = 0x0004;
 
-        private const UInt32 MOUSEEVENTF_LEFTDOWN = 0x0002;
-        private const UInt32 MOUSEEVENTF_LEFTUP = 0x0004;
-        private static extern void mouse_event(
-               UInt32 dwFlags, // motion and click options
-               UInt32 dx, // horizontal position or change
-               UInt32 dy, // vertical position or change
-               UInt32 dwData, // wheel movement
-               IntPtr dwExtraInfo // application-defined information
-        );
-        [DllImport("user32.dll")]
-        static extern void mouse_event(uint dwFlags, uint dx, uint dy, uint dwData, UIntPtr dwExtraInfo); 
+        // Keybord Key values
+        const uint VK_RIGHT = 0x27;
+        const uint VK_UP = 0x26;
+        const uint VK_LEFT = 0x25;
+        const uint VK_DOWN = 0x28;
+        const uint VK_ALT = 0x12;
+        const uint VK_CTRL = 0x11;
+        const uint VK_TAB = 0x09;
+
+        const uint KEYEVENTF_KEYUP = 0x0002;
+        const uint KEYEVENTF_EXTENDED = 0x0001;
 
         #endregion
+
+        #region Dll declaration
+        [DllImport("user32.dll")]
+        private static extern void mouse_event(uint dwFlags, uint dx, uint dy, uint dwData, int dwExtraInfo);
+
+        [DllImport("user32.dll")]
+        private static extern bool keybd_event(uint bVk, byte bScan, uint dwFlags, int dwExtraInfo);
+
+        #endregion
+
+        private void makeKeyPress(uint key)
+        {
+            keybd_event(key, 0, 0, 0);
+            Thread.Sleep(50);
+            keybd_event(key, 0, KEYEVENTF_KEYUP, 0);
+        }
+
+        private void combineKeyPress(uint[] keys)
+        {
+            for (int i = 0; i < keys.Length; i++)
+            {
+                keybd_event(keys[i], 0, 0, 0);
+            }
+
+            Thread.Sleep(1000);
+
+            for (int i = keys.Length - 1; i >= 0; i--)
+            {
+                keybd_event(keys[i], 0, KEYEVENTF_KEYUP | KEYEVENTF_EXTENDED, 0);
+            }
+        }
+
 
         /// <summary>
         /// Set cursor position by x,y
@@ -49,16 +89,46 @@ namespace IronManConsole
             SetCursorPosition(currCursorPosition.X + x, currCursorPosition.Y + y);
         }
 
-        public void MakeKeyPress()
+        public void CursorRightClick()
         {
-
+            mouse_event(MOUSEEVENTF_RIGHTDOWN, (uint)Cursor.Position.X, (uint)Cursor.Position.Y, 0, 0);
+            Thread.Sleep(50);
+            mouse_event(MOUSEEVENTF_RIGHTUP, (uint)Cursor.Position.X, (uint)Cursor.Position.Y, 0, 0);
         }
 
         public void CursorLeftClick()
         {
-            mouse_event(MOUSEEVENTF_LEFTDOWN, 0, 0, 0, new System.IntPtr());
-            mouse_event(MOUSEEVENTF_LEFTUP, 0, 0, 0, new System.IntPtr());
+            mouse_event(MOUSEEVENTF_LEFTDOWN, (uint)Cursor.Position.X, (uint)Cursor.Position.Y, 0, 0);
+            Thread.Sleep(50);
+            mouse_event(MOUSEEVENTF_LEFTUP, (uint)Cursor.Position.X, (uint)Cursor.Position.Y, 0, 0);
         }
 
+        public void KeyLeft()
+        {
+            this.makeKeyPress(VK_LEFT);
+        }
+
+        public void KeyRight()
+        {
+            this.makeKeyPress(VK_RIGHT);
+        }
+
+        public void KeyUp()
+        {
+            this.makeKeyPress(VK_UP);
+        }
+
+        public void KeyDown()
+        {
+            this.makeKeyPress(VK_DOWN);
+        }
+
+        public void AltCtrlTab()
+        {
+
+            uint[] altCtrlTab = {VK_ALT};
+
+            this.combineKeyPress(new uint[] { VK_ALT,VK_CTRL, VK_TAB });
+        }
     }
 }
