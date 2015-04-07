@@ -8,6 +8,11 @@ using System.Threading.Tasks;
 
 namespace IronManConsole
 {
+    public enum Status
+    {
+        none,
+        afterSpreadfingers
+    }
     public class Camera
     {
         const int WIDTH = 640;
@@ -25,6 +30,10 @@ namespace IronManConsole
 
         private PXCMHandModule _hand;
         private PXCMHandData _handData;
+        private Point lastLocation;
+
+        private Status status;
+        private int countFrames;
 
         private PXCMHandConfiguration.OnFiredGestureDelegate[] delegates;
         private PXCMHandData.AlertData lastAlertData;
@@ -33,6 +42,9 @@ namespace IronManConsole
         {
             this.win = new Win32framework();
             this.delegates = dlgts;
+
+            this.status = Status.none;
+            this.countFrames = 0;
 
             // Create the manager
             this._session = PXCMSession.CreateInstance();
@@ -95,6 +107,27 @@ namespace IronManConsole
             {
                 this._handData.Update();
                 this.updateHand();
+
+                if (this.status == Status.afterSpreadfingers)
+                {
+                    this.countFrames++;
+                    if (this.countFrames == 10)
+                    {
+                        this.countFrames = 0;
+                        this.status = Status.none;
+
+                        var x = this.hand.Middle.Tip.X;
+
+                        if (x < this.lastLocation.X)
+                        {
+                            Console.WriteLine("Left");
+                        }
+                        else
+                        {
+                            Console.WriteLine("Right");
+                        }
+                    }
+                }
             }
 
             return pxcmStatus.PXCM_STATUS_NO_ERROR;
@@ -105,7 +138,6 @@ namespace IronManConsole
             int numberOfHands = this._handData.QueryNumberOfHands();
             if (numberOfHands < 1) return;
             PXCMHandData.IHand currentHandData;
-            PXCMHandData.JointData jointData;
             this._handData.QueryHandData(PXCMHandData.AccessOrderType.ACCESS_ORDER_BY_TIME, 0, out currentHandData);
 
             Hand h = new Hand
@@ -185,7 +217,12 @@ namespace IronManConsole
             this._handData.QueryHandDataById(gestureData.handId, out currentHandData);
             if (gestureData.state == PXCMHandData.GestureStateType.GESTURE_STATE_START)
             {
-                Console.Beep();
+                if (gestureData.name == "spreadfingers")
+                {
+                    Console.Beep();
+                    this.status = Status.afterSpreadfingers;
+                    this.lastLocation = this.hand.Middle.Tip;
+                }
             }
         }
 
