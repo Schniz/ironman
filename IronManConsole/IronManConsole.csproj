@@ -60,6 +60,8 @@
   <ItemGroup>
     <Compile Include="App.cs" />
     <Compile Include="Camera.cs" />
+    <Compile Include="Finger.cs" />
+    <Compile Include="Hand.cs" />
     <Compile Include="MedianStuff.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
