@@ -65,7 +65,6 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Action.cs" />
-    <Compile Include="App.cs" />
     <Compile Include="Camera.cs" />
     <Compile Include="Finger.cs" />
     <Compile Include="Hand.cs" />
@@ -85,9 +84,6 @@
     </Compile>
     <Compile Include="SortedList.cs" />
     <Compile Include="Win32framework.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="WindowScrape.dll" />

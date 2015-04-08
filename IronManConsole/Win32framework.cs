@@ -51,6 +51,11 @@ namespace IronManConsole
         static extern IntPtr GetForegroundWindow();
 
         [DllImport("user32.dll")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        static extern bool ShowWindow(IntPtr hWnd, uint nCmdShow);
+
+        [DllImport("user32.dll")]
+        [return: MarshalAs(UnmanagedType.Bool)]
         public static extern IntPtr SendMessageW(IntPtr hWnd, int Msg,
             IntPtr wParam, IntPtr lParam);
 
@@ -97,6 +102,20 @@ namespace IronManConsole
         public void SetCursorPosition(int x, int y)
         {
             Cursor.Position = new Point(x, y);
+        }
+
+        public void MinimizeActiveWindow()
+        {
+            uint minimize = 6;
+            IntPtr currentWindow = GetForegroundWindow();
+            ShowWindow(currentWindow, minimize);
+        }
+
+        public void MaximizeActiveWindow()
+        {
+            uint maximize = 3;
+            IntPtr currentWindow = GetForegroundWindow();
+            ShowWindow(currentWindow, maximize);
         }
 
         /// <summary>
@@ -158,14 +177,14 @@ namespace IronManConsole
 
         }
 
-        public void ResizeWindow(int size, Point location)
+        public void ResizeWindow(Point delta)
         {
             IntPtr a = GetForegroundWindow();
             WindowScrape.Types.HwndObject hw = new WindowScrape.Types.HwndObject(a);
             Point pnt = hw.Location;
             Size oldSize = hw.Size;
             
-            MoveWindow(a, pnt.X - size / 2 + location.X, pnt.Y - size / 2 + location.Y, oldSize.Width + size, oldSize.Height + size, true);
+            MoveWindow(a, pnt.X - delta.X / 2, pnt.Y - delta.Y / 2 , oldSize.Width + delta.X, oldSize.Height + delta.Y, true);
         }
 
         /// <summary>

@@ -13,14 +13,22 @@ namespace IronManConsole
 {
     public partial class Main : Form
     {
+        private Camera cam;
         public Main()
         {
             InitializeComponent();
-
+            cam = new Camera();
+            cam.StatusChanged += cam_StatusChanged;
+            cam.Start();
             //this.ShowInTaskbar = false;
             this.BackColor = Color.Black;
             this.TransparencyKey = Color.Black;
             this.TopMost = true;
+        }
+
+        void cam_StatusChanged(object sender, StatusEventArgs e)
+        {
+            this.ChangeStatus(e.status);
         }
 
         public void ChangeStatus(Status status)

@@ -17,10 +17,15 @@ namespace IronManConsole
         pinch,
         rock
     }
+    public class StatusEventArgs : EventArgs
+    {
+        public Status status;
+    }
     public class Camera
     {
         const int WIDTH = 640;
         const int HEIGHT = 480;
+        const int MAX_ROCK_FRAMES = 20;
 
         private System.Timers.Timer directionTimer;
         private System.Timers.Timer pinchTimer;
@@ -28,7 +33,6 @@ namespace IronManConsole
 
         private Action action;
 
-        private MedianStuff cursorMedian = new MedianStuff();
 
         private PXCMSession _session;
         private PXCMSenseManager _mngr;
@@ -37,7 +41,22 @@ namespace IronManConsole
         private Hand rightHand;
         private Hand leftHand;
 
-        private Status status;
+        private int rockCounter;
+        private int pinchCounter;
+
+        private Status _status;
+
+        public event EventHandler<StatusEventArgs> StatusChanged;
+
+        public Status status
+        {
+            get { return _status; }
+            set { 
+                _status = value;
+                OnStatusChanged(new StatusEventArgs { status = _status });
+            }
+        }
+
 
         private Point lastRightLocation;
         private Point lastLeftLocation;
@@ -45,12 +64,12 @@ namespace IronManConsole
         private PXCMHandModule _hand;
         private PXCMHandData _handData;
 
-        private PXCMHandConfiguration.OnFiredGestureDelegate[] delegates;
-
-        public Camera(params PXCMHandConfiguration.OnFiredGestureDelegate[] dlgts)
+        public Camera()
         {
+            
             this.action = new Action();
-            this.delegates = dlgts;
+
+            this.rockCounter = 0;
 
             directionTimer = new System.Timers.Timer(1000);
             directionTimer.Elapsed += directionTimer_Elapsed;
@@ -58,7 +77,7 @@ namespace IronManConsole
             pinchTimer = new System.Timers.Timer(500);
             pinchTimer.Elapsed += pinchTimer_Elapsed;
 
-            rockTimer = new System.Timers.Timer(500);
+            rockTimer = new System.Timers.Timer(300);
             rockTimer.Elapsed += rockTimer_Elapsed;
 
             // Create the manager
@@ -80,12 +99,6 @@ namespace IronManConsole
 
             // Hands config
             PXCMHandConfiguration conf = this._hand.CreateActiveConfiguration();
-            //conf.EnableGesture("thumb_up", false);
-            //conf.EnableGesture("swipe_left", false);
-            //conf.EnableGesture("swipe_up", false);
-            //conf.EnableGesture("swipe_down", false);
-            //conf.EnableGesture("swipe_right", false);
-            //conf.EnableGesture("spreadfingers", false);
             conf.EnableGesture("two_fingers_pinch_open", true);
 
             // Subscribe hands alerts
@@ -109,15 +122,24 @@ namespace IronManConsole
 
         void rockTimer_Elapsed(object sender, ElapsedEventArgs e)
         {
-            Console.WriteLine("rock timer");
-            this.status = Status.none;
+            this.rockCounter = 0;
+            if (this.status == Status.rock)
+            {
+                Console.WriteLine("rock timer");
+                this.status = Status.none;
+            }
             this.rockTimer.Stop();
+
         }
 
         void pinchTimer_Elapsed(object sender, ElapsedEventArgs e)
         {
+            this.pinchCounter = 0;
             Console.WriteLine("pinch timer");
-            this.status = Status.none;
+            if (this.status == Status.pinch)
+            {
+                this.status = Status.none;
+            }
             this.pinchTimer.Stop();
         }
 
@@ -200,8 +222,8 @@ namespace IronManConsole
                         this.status = Status.pinch;
                         this.pinchTimer.Start();
 
-                        this.lastLeftLocation = this.leftHand.Index.Tip;
-                        this.lastRightLocation = this.rightHand.Index.Tip;
+                        this.lastLeftLocation = this.leftHand.Index.Center;
+                        this.lastRightLocation = this.rightHand.Index.Center;
 
                     }
                     else if (this.status == Status.pinch)
@@ -213,31 +235,37 @@ namespace IronManConsole
 
                 if (this.status == Status.pinch)
                 {
-                    var oldDistance = Math.Sqrt(Math.Pow(this.lastLeftLocation.X - this.lastRightLocation.X, 2) + Math.Pow(this.lastLeftLocation.Y - this.lastRightLocation.Y, 2));
-                    var newDistance = Math.Sqrt(Math.Pow(this.leftHand.Index.Tip.X - this.rightHand.Index.Tip.X, 2) + Math.Pow(this.leftHand.Index.Tip.Y - this.rightHand.Index.Tip.Y, 2));
-
-                    var oldAverage = new Point
+                    if (this.pinchCounter < Action.PINCH_INTERVAL)
                     {
-                        X = (this.lastLeftLocation.X + this.lastRightLocation.X) / 2,
-                        Y = (this.lastLeftLocation.Y + this.lastRightLocation.Y) / 2
-                    };
-
-                    var newAverage = new Point
+                        this.pinchCounter++;
+                    }
+                    else
                     {
-                        X = (this.leftHand.Index.Tip.X + this.rightHand.Index.Tip.X) / 2,
-                        Y = (this.leftHand.Index.Tip.Y + this.rightHand.Index.Tip.Y) / 2
-                    };
+                        this.pinchCounter = 0;
 
-                    this.lastLeftLocation = this.leftHand.Index.Tip;
-                    this.lastRightLocation = this.rightHand.Index.Tip;
+                        //var oldDistance = Math.Sqrt(Math.Pow(this.lastLeftLocation.X - this.lastRightLocation.X, 2) + Math.Pow(this.lastLeftLocation.Y - this.lastRightLocation.Y, 2));
+                        //var newDistance = Math.Sqrt(Math.Pow(this.leftHand.Index.Center.X - this.rightHand.Index.Center.X, 2) + Math.Pow(this.leftHand.Index.Center.Y - this.rightHand.Index.Center.Y, 2));
 
-                    this.action.Pinch((int)(newDistance - oldDistance), new Point
-                    {
-                        X = 0,
-                        Y = 0
-                    });
+                        //this.lastLeftLocation = this.leftHand.Index.Center;
+                        //this.lastRightLocation = this.rightHand.Index.Center;
 
-                    Console.WriteLine("diff:" + (oldDistance - newDistance).ToString());
+                        //this.action.Pinch((int)(newDistance - oldDistance),new Point());
+
+                        var oldDelta = calculateDelta(this.lastLeftLocation, this.lastRightLocation);
+                        var newDelta = calculateDelta(this.leftHand.Index.Center, this.rightHand.Index.Center);
+
+                        this.action.Pinch(new Point
+                        {
+                            X = newDelta.X - oldDelta.X,
+                            Y = newDelta.Y - oldDelta.Y
+                        });
+
+                        this.lastLeftLocation = this.leftHand.Index.Center;
+                        this.lastRightLocation = this.rightHand.Index.Center;
+                    }
+
+
+                    //Console.WriteLine("diff:" + (oldDistance - newDistance).ToString());
                 }
             }
 
@@ -247,54 +275,56 @@ namespace IronManConsole
                 {
                     if (this.status == Status.none)
                     {
-                        this.status = Status.rock;
-                        this.rockTimer.Start();
-
-                        this.lastRightLocation = this.rightHand.Index.Tip;
-
+                        if (rockCounter < MAX_ROCK_FRAMES)
+                        {
+                            rockCounter++;
+                        }
+                        else
+                        {
+                            this.status = Status.rock;
+                            this.lastRightLocation = this.rightHand.Index.Center;
+                        }
                     }
-                    else if (this.status == Status.rock)
-                    {
-                        this.rockTimer.Stop();
-                        this.rockTimer.Start();
-                    }
+
+                    this.rockTimer.Stop();
+                    this.rockTimer.Start();
                 }
 
                 if (this.status == Status.rock)
                 {
-                    var diff = this.lastRightLocation.Y - this.rightHand.Index.Tip.Y;
+                    var diff = this.lastRightLocation.Y - this.rightHand.Index.Center.Y;
 
                     if (Math.Abs(diff) > 5)
                     {
-                        if (this.lastRightLocation.Y > this.rightHand.Index.Tip.Y)
+                        if (this.lastRightLocation.Y > this.rightHand.Index.Center.Y)
                         {
-                            Console.WriteLine("increase");
+                            this.action.VolUp();
                         }
                         else
                         {
-                            Console.WriteLine("decrease");
+                            this.action.VolDown();
                         }
                     }
 
-                    this.lastRightLocation = this.rightHand.Index.Tip;
+                    this.lastRightLocation = this.rightHand.Index.Center;
                 }
 
 
                 if (this.status == Status.afterSpreadfingers)
                 {
-                    if (CalculateDistances(this.rightHand.Middle.Tip, this.lastRightLocation))
+                    if (CalculateDistances(this.rightHand.Middle.Center, this.lastRightLocation))
                     {
                         this.directionTimer.Stop();
                         this.status = Status.none;
-                        Thread.Sleep(500);
+                        Thread.Sleep(300);
                     }
                 }
-                else if (this.rightHand.z < 0.4 && this.rightHand.Middle.Tip.X > 200 && this.rightHand.Middle.Tip.X < 450 && this.rightHand.Middle.Tip.Y > 150 && this.rightHand.Middle.Tip.Y < 300)
+                else if (this.rightHand.z < 0.4 && this.rightHand.Middle.Center.X > 200 && this.rightHand.Middle.Center.X < 450 && this.rightHand.Middle.Center.Y > 150 && this.rightHand.Middle.Center.Y < 300)
                 {
                     if (this.rightHand.CountFingers() == 4 && this.status == Status.none)
                     {
                         this.status = Status.afterSpreadfingers;
-                        this.lastRightLocation = this.rightHand.Middle.Tip;
+                        this.lastRightLocation = this.rightHand.Middle.Center;
                         Console.Beep(880, 300);
                         this.directionTimer.Start();
                     }
@@ -305,14 +335,23 @@ namespace IronManConsole
             {
 
                 //    Console.WriteLine("L:{0} \t\t R:{1}",
-                //            this.leftHand != null ? this.leftHand.Middle.Tip.ToString() + " - " + this.leftHand.CountFingers() : "\t\t",
-                //            this.rightHand != null ? this.rightHand.Middle.Tip.ToString() + " - " + this.rightHand.CountFingers() + " z:" + this.rightHand.z : "\t\t");
+                //            this.leftHand != null ? this.leftHand.Middle.Center.ToString() + " - " + this.leftHand.CountFingers() : "\t\t",
+                //            this.rightHand != null ? this.rightHand.Middle.Center.ToString() + " - " + this.rightHand.CountFingers() + " z:" + this.rightHand.z : "\t\t");
 
 
                 //Console.WriteLine("L:{0} \t\t R:{1}",
                 //        this.leftHand != null ? this.leftHand.Gestrue : "\t\t",
                 //        this.rightHand != null ? this.rightHand.Gestrue : "\t\t");
             }
+        }
+
+        private Point calculateDelta(Point left, Point right)
+        {
+            return new Point
+            {
+                X = Math.Abs(right.X - left.X),
+                Y = Math.Abs(right.Y - left.Y)
+            };
         }
 
         private Hand GetHandData(PXCMHandData.IHand currentHandData)
@@ -429,6 +468,15 @@ namespace IronManConsole
         {
             this._mngr.Dispose();
             this._session.Dispose();
+        }
+
+        protected virtual void OnStatusChanged(StatusEventArgs e)
+        {
+            EventHandler<StatusEventArgs> handler = StatusChanged;
+            if (handler != null)
+            {
+                handler(this, e);
+            }
         }
     }
 }

@@ -7,9 +7,16 @@ using System.Threading.Tasks;
 
 namespace IronManConsole
 {
-    class Action
+    public class Action
     {
         private Win32framework win;
+
+        public const int PINCH_INTERVAL = 1;
+
+        private bool isSlide()
+        {
+            return win.GetCurrentWindowName().ToUpper().Contains("POWERPOINT SLIDE SHOW") || win.GetCurrentWindowName().ToUpper().Contains("GOOGLE SLIDE");
+        }
 
         public Action()
         {
@@ -18,7 +25,7 @@ namespace IronManConsole
 
         public void Left()
         {
-            if (win.GetCurrentWindowName().ToUpper().Contains("POWERPOINT SLIDE SHOW"))
+            if (this.isSlide())
             {
                 win.KeyLeft();
             }
@@ -30,7 +37,7 @@ namespace IronManConsole
 
         public void Right()
         {
-            if (win.GetCurrentWindowName().ToUpper().Contains("POWERPOINT SLIDE SHOW"))
+            if (this.isSlide())
             {
                 win.KeyRight();
             }
@@ -43,7 +50,7 @@ namespace IronManConsole
 
         public void Up()
         {
-            if (!win.GetCurrentWindowName().ToUpper().Contains("POWERPOINT SLIDE SHOW"))
+            if (!this.isSlide())
             {
                 this.win.WinUp();
             }
@@ -51,28 +58,33 @@ namespace IronManConsole
 
         public void Down()
         {
-            if (!win.GetCurrentWindowName().ToUpper().Contains("POWERPOINT SLIDE SHOW"))
+            if (!this.isSlide())
             {
                 this.win.WinDown();
             }
         }
 
-        public void Pinch(int size, Point location)
+        public void Pinch(Point delta)
         {
-            if (!win.GetCurrentWindowName().ToUpper().Contains("POWERPOINT SLIDE SHOW"))
+            if (!this.isSlide())
             {
-                win.ResizeWindow(size, location);
+                for (int i = 0; i < PINCH_INTERVAL; i++)
+                {
+                    win.ResizeWindow(delta);
+                }
             }
         }
 
         public void VolUp()
         {
             this.win.VolUp();
+            this.win.VolUp();
         }
 
         public void VolDown()
         {
-            this.win.WinDown();
+            this.win.VolDown();
+            this.win.VolDown();
         }
     }
 }
