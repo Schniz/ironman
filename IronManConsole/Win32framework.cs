@@ -54,6 +54,11 @@ namespace IronManConsole
         [return: MarshalAs(UnmanagedType.Bool)]
         static extern bool ShowWindow(IntPtr hWnd, uint nCmdShow);
 
+        [DllImport("user32.dll")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        public static extern IntPtr SendMessageW(IntPtr hWnd, int Msg,
+            IntPtr wParam, IntPtr lParam);
+
         #endregion
 
         private void makeKeyPress(uint key)
@@ -178,7 +183,7 @@ namespace IronManConsole
             WindowScrape.Types.HwndObject hw = new WindowScrape.Types.HwndObject(a);
             Point pnt = hw.Location;
             Size oldSize = hw.Size;
-
+            
             MoveWindow(a, pnt.X - size / 2 + location.X, pnt.Y - size / 2 + location.Y, oldSize.Width + size, oldSize.Height + size, true);
         }
 
@@ -193,7 +198,14 @@ namespace IronManConsole
             return hw.Title;
         }
 
+        public void VolUp()
+        {
+            keybd_event((byte)Keys.VolumeUp, 0, 0, 0); 
+        }
 
-
+        public void VolDown()
+        {
+            keybd_event((byte)Keys.VolumeDown, 0, 0, 0);
+        }
     }
 }

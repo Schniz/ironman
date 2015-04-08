@@ -13,7 +13,6 @@ namespace IronManConsole
         {
             new App().run();
             Console.Read();
-            
         }
     }
 }

@@ -14,7 +14,8 @@ namespace IronManConsole
     {
         none,
         afterSpreadfingers,
-        pinch
+        pinch,
+        rock
     }
     public class Camera
     {
@@ -23,6 +24,7 @@ namespace IronManConsole
 
         private System.Timers.Timer directionTimer;
         private System.Timers.Timer pinchTimer;
+        private System.Timers.Timer rockTimer;
 
         private Action action;
 
@@ -55,6 +57,9 @@ namespace IronManConsole
 
             pinchTimer = new System.Timers.Timer(500);
             pinchTimer.Elapsed += pinchTimer_Elapsed;
+
+            rockTimer = new System.Timers.Timer(500);
+            rockTimer.Elapsed += rockTimer_Elapsed;
 
             // Create the manager
             this._session = PXCMSession.CreateInstance();
@@ -100,6 +105,13 @@ namespace IronManConsole
             this._handler.onModuleProcessedFrame = this.onModuleProcessedFrame;
 
             this._mngr.Init(this._handler);
+        }
+
+        void rockTimer_Elapsed(object sender, ElapsedEventArgs e)
+        {
+            Console.WriteLine("rock timer");
+            this.status = Status.none;
+            this.rockTimer.Stop();
         }
 
         void pinchTimer_Elapsed(object sender, ElapsedEventArgs e)
@@ -197,7 +209,6 @@ namespace IronManConsole
                         this.pinchTimer.Stop();
                         this.pinchTimer.Start();
                     }
-
                 }
 
                 if (this.status == Status.pinch)
@@ -232,6 +243,43 @@ namespace IronManConsole
 
             if (this.rightHand != null)
             {
+                if (this.rightHand.IsRock())
+                {
+                    if (this.status == Status.none)
+                    {
+                        this.status = Status.rock;
+                        this.rockTimer.Start();
+
+                        this.lastRightLocation = this.rightHand.Index.Tip;
+
+                    }
+                    else if (this.status == Status.rock)
+                    {
+                        this.rockTimer.Stop();
+                        this.rockTimer.Start();
+                    }
+                }
+
+                if (this.status == Status.rock)
+                {
+                    var diff = this.lastRightLocation.Y - this.rightHand.Index.Tip.Y;
+
+                    if (Math.Abs(diff) > 5)
+                    {
+                        if (this.lastRightLocation.Y > this.rightHand.Index.Tip.Y)
+                        {
+                            this.action.VolUp();
+                        }
+                        else
+                        {
+                            this.action.VolDown();
+                        }
+                    }
+
+                    this.lastRightLocation = this.rightHand.Index.Tip;
+                }
+
+
                 if (this.status == Status.afterSpreadfingers)
                 {
                     if (CalculateDistances(this.rightHand.Middle.Tip, this.lastRightLocation))

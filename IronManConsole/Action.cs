@@ -11,6 +11,11 @@ namespace IronManConsole
     {
         private Win32framework win;
 
+        private bool isSlide()
+        {
+            return win.GetCurrentWindowName().ToUpper().Contains("POWERPOINT SLIDE SHOW") || win.GetCurrentWindowName().ToUpper().Contains("GOOGLE SLIDE");
+        }
+
         public Action()
         {
             win = new Win32framework();
@@ -18,7 +23,7 @@ namespace IronManConsole
 
         public void Left()
         {
-            if (win.GetCurrentWindowName().ToUpper().Contains("POWERPOINT SLIDE SHOW"))
+            if (this.isSlide())
             {
                 win.KeyLeft();
             }
@@ -30,7 +35,7 @@ namespace IronManConsole
 
         public void Right()
         {
-            if (win.GetCurrentWindowName().ToUpper().Contains("POWERPOINT SLIDE SHOW"))
+            if (this.isSlide())
             {
                 win.KeyRight();
             }
@@ -43,7 +48,7 @@ namespace IronManConsole
 
         public void Up()
         {
-            if (!win.GetCurrentWindowName().ToUpper().Contains("POWERPOINT SLIDE SHOW"))
+            if (!this.isSlide())
             {
                 this.win.WinUp();
             }
@@ -51,7 +56,7 @@ namespace IronManConsole
 
         public void Down()
         {
-            if (!win.GetCurrentWindowName().ToUpper().Contains("POWERPOINT SLIDE SHOW"))
+            if (!this.isSlide())
             {
                 this.win.WinDown();
             }
@@ -59,10 +64,22 @@ namespace IronManConsole
 
         public void Pinch(int size, Point location)
         {
-            if (!win.GetCurrentWindowName().ToUpper().Contains("POWERPOINT SLIDE SHOW"))
+            if (!this.isSlide())
             {
                 win.ResizeWindow(size, location);
             }
+        }
+
+        public void VolUp()
+        {
+            this.win.VolUp();
+            this.win.VolUp();
+        }
+
+        public void VolDown()
+        {
+            this.win.VolDown();
+            this.win.VolDown();
         }
     }
 }
