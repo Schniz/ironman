@@ -64,7 +64,7 @@ namespace IronManConsole
             pinchTimer = new System.Timers.Timer(500);
             pinchTimer.Elapsed += pinchTimer_Elapsed;
 
-            rockTimer = new System.Timers.Timer(500);
+            rockTimer = new System.Timers.Timer(300);
             rockTimer.Elapsed += rockTimer_Elapsed;
 
             // Create the manager
@@ -118,6 +118,7 @@ namespace IronManConsole
             this.rockCounter = 0;
             if(this.status == Status.rock)
             {
+                Console.WriteLine("rock timer");
                 this.status = Status.none;
             }
             this.rockTimer.Stop();
@@ -214,8 +215,8 @@ namespace IronManConsole
                         this.status = Status.pinch;
                         this.pinchTimer.Start();
 
-                        this.lastLeftLocation = this.leftHand.Index.Tip;
-                        this.lastRightLocation = this.rightHand.Index.Tip;
+                        this.lastLeftLocation = this.leftHand.Index.Center;
+                        this.lastRightLocation = this.rightHand.Index.Center;
 
                     }
                     else if (this.status == Status.pinch)
@@ -236,7 +237,7 @@ namespace IronManConsole
                         this.pinchCounter = 0;
 
                         var oldDistance = Math.Sqrt(Math.Pow(this.lastLeftLocation.X - this.lastRightLocation.X, 2) + Math.Pow(this.lastLeftLocation.Y - this.lastRightLocation.Y, 2));
-                        var newDistance = Math.Sqrt(Math.Pow(this.leftHand.Index.Tip.X - this.rightHand.Index.Tip.X, 2) + Math.Pow(this.leftHand.Index.Tip.Y - this.rightHand.Index.Tip.Y, 2));
+                        var newDistance = Math.Sqrt(Math.Pow(this.leftHand.Index.Center.X - this.rightHand.Index.Center.X, 2) + Math.Pow(this.leftHand.Index.Center.Y - this.rightHand.Index.Center.Y, 2));
 
                         var oldAverage = new Point
                         {
@@ -246,12 +247,12 @@ namespace IronManConsole
 
                         var newAverage = new Point
                         {
-                            X = (this.leftHand.Index.Tip.X + this.rightHand.Index.Tip.X) / 2,
-                            Y = (this.leftHand.Index.Tip.Y + this.rightHand.Index.Tip.Y) / 2
+                            X = (this.leftHand.Index.Center.X + this.rightHand.Index.Center.X) / 2,
+                            Y = (this.leftHand.Index.Center.Y + this.rightHand.Index.Center.Y) / 2
                         };
 
-                        this.lastLeftLocation = this.leftHand.Index.Tip;
-                        this.lastRightLocation = this.rightHand.Index.Tip;
+                        this.lastLeftLocation = this.leftHand.Index.Center;
+                        this.lastRightLocation = this.rightHand.Index.Center;
 
                         this.action.Pinch((int)(newDistance - oldDistance),new Point());
                     }
@@ -274,7 +275,7 @@ namespace IronManConsole
                         else
                         {
                             this.status = Status.rock;
-                            this.lastRightLocation = this.rightHand.Index.Tip;
+                            this.lastRightLocation = this.rightHand.Index.Center;
                         }
                     }
 
@@ -284,11 +285,11 @@ namespace IronManConsole
 
                 if (this.status == Status.rock)
                 {
-                    var diff = this.lastRightLocation.Y - this.rightHand.Index.Tip.Y;
+                    var diff = this.lastRightLocation.Y - this.rightHand.Index.Center.Y;
 
                     if (Math.Abs(diff) > 5)
                     {
-                        if (this.lastRightLocation.Y > this.rightHand.Index.Tip.Y)
+                        if (this.lastRightLocation.Y > this.rightHand.Index.Center.Y)
                         {
                             this.action.VolUp();
                         }
@@ -298,26 +299,26 @@ namespace IronManConsole
                         }
                     }
 
-                    this.lastRightLocation = this.rightHand.Index.Tip;
+                    this.lastRightLocation = this.rightHand.Index.Center;
                 }
 
 
                 if (this.status == Status.afterSpreadfingers)
                 {
-                    if (CalculateDistances(this.rightHand.Middle.Tip, this.lastRightLocation))
+                    if (CalculateDistances(this.rightHand.Middle.Center, this.lastRightLocation))
                     {
                         this.directionTimer.Stop();
                         this.status = Status.none;
-                        //Thread.Sleep(500);
+                        Thread.Sleep(300);
                     }
                 }
-                else if (this.rightHand.z < 0.4 && this.rightHand.Middle.Tip.X > 200 && this.rightHand.Middle.Tip.X < 450 && this.rightHand.Middle.Tip.Y > 150 && this.rightHand.Middle.Tip.Y < 300)
+                else if (this.rightHand.z < 0.4 && this.rightHand.Middle.Center.X > 200 && this.rightHand.Middle.Center.X < 450 && this.rightHand.Middle.Center.Y > 150 && this.rightHand.Middle.Center.Y < 300)
                 {
                     if (this.rightHand.CountFingers() == 4 && this.status == Status.none)
                     {
                         this.status = Status.afterSpreadfingers;
-                        this.lastRightLocation = this.rightHand.Middle.Tip;
-                        //Console.Beep(880, 300);
+                        this.lastRightLocation = this.rightHand.Middle.Center;
+                        Console.Beep(880, 300);
                         this.directionTimer.Start();
                     }
                 }
@@ -327,8 +328,8 @@ namespace IronManConsole
             {
 
                 //    Console.WriteLine("L:{0} \t\t R:{1}",
-                //            this.leftHand != null ? this.leftHand.Middle.Tip.ToString() + " - " + this.leftHand.CountFingers() : "\t\t",
-                //            this.rightHand != null ? this.rightHand.Middle.Tip.ToString() + " - " + this.rightHand.CountFingers() + " z:" + this.rightHand.z : "\t\t");
+                //            this.leftHand != null ? this.leftHand.Middle.Center.ToString() + " - " + this.leftHand.CountFingers() : "\t\t",
+                //            this.rightHand != null ? this.rightHand.Middle.Center.ToString() + " - " + this.rightHand.CountFingers() + " z:" + this.rightHand.z : "\t\t");
 
 
                 //Console.WriteLine("L:{0} \t\t R:{1}",
@@ -403,12 +404,12 @@ namespace IronManConsole
                 if (newLoc.X < oldLoc.X)
                 {
                     Console.WriteLine("Left");
-                    this.action.Left();
+                    //this.action.Left();
                 }
                 else
                 {
                     Console.WriteLine("Right");
-                    this.action.Right();
+                    //this.action.Right();
                 }
 
                 return true;
@@ -419,12 +420,12 @@ namespace IronManConsole
                 if (newLoc.Y < oldLoc.Y)
                 {
                     Console.WriteLine("Up");
-                    this.action.Up();
+                    //this.action.Up();
                 }
                 else
                 {
                     Console.WriteLine("Down");
-                    this.action.Down();
+                    //this.action.Down();
                 }
 
                 return true;
