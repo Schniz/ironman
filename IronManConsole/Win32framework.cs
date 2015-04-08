@@ -30,6 +30,7 @@ namespace IronManConsole
         const uint VK_ALT = 0x12;
         const uint VK_CTRL = 0x11;
         const uint VK_TAB = 0x09;
+        const uint VK_LWIN = 0x5B;
 
         const uint KEYEVENTF_KEYUP = 0x0002;
         const uint KEYEVENTF_EXTENDED = 0x0001;
@@ -75,6 +76,16 @@ namespace IronManConsole
             {
                 keybd_event(keys[i], 0, KEYEVENTF_KEYUP | KEYEVENTF_EXTENDED, 0);
             }
+        }
+
+        public void WinDown()
+        {
+            this.combineKeyPress(new uint[] { VK_LWIN, VK_DOWN });
+        }
+
+        public void WinUp()
+        {
+            this.combineKeyPress(new uint[] { VK_UP, VK_DOWN });
         }
 
 
@@ -176,6 +187,7 @@ namespace IronManConsole
             WindowScrape.Types.HwndObject hw = new WindowScrape.Types.HwndObject(a);
             return hw.Title;
         }
+
 
     }
 }
