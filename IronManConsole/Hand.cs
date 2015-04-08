@@ -30,5 +30,10 @@ namespace IronManConsole
 
             return fingers;
         }
+
+        public bool IsRock()
+        {
+            return !Index.IsFingerFolded() && !Pinky.IsFingerFolded() && Middle.IsFingerFolded() && Ring.IsFingerFolded();
+        }
     }
 }
