@@ -53,7 +53,7 @@ namespace IronManConsole
             directionTimer = new System.Timers.Timer(1000);
             directionTimer.Elapsed += directionTimer_Elapsed;
 
-            pinchTimer = new System.Timers.Timer(1000);
+            pinchTimer = new System.Timers.Timer(500);
             pinchTimer.Elapsed += pinchTimer_Elapsed;
 
             // Create the manager
@@ -220,7 +220,11 @@ namespace IronManConsole
                     this.lastLeftLocation = this.leftHand.Index.Tip;
                     this.lastRightLocation = this.rightHand.Index.Tip;
 
-                    win.ResizeWindow((int)(newDistance - oldDistance));
+                    win.ResizeWindow((int)(newDistance - oldDistance), new Point
+                    {
+                        X = 0,
+                        Y = 0
+                    });
 
                     Console.WriteLine("diff:" + (oldDistance - newDistance).ToString());
                 }
@@ -345,7 +349,7 @@ namespace IronManConsole
                 if (newLoc.Y < oldLoc.Y)
                 {
                     Console.WriteLine("Up");
-                    //this.win.KeyUp();
+                    this.win.KeyUp();
                 }
                 else
                 {
