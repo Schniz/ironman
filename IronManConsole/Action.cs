@@ -64,5 +64,15 @@ namespace IronManConsole
                 win.ResizeWindow(size, location);
             }
         }
+
+        public void VolUp()
+        {
+            this.win.VolUp();
+        }
+
+        public void VolDown()
+        {
+            this.win.WinDown();
+        }
     }
 }

@@ -50,6 +50,10 @@ namespace IronManConsole
         [DllImport("user32.dll")]
         static extern IntPtr GetForegroundWindow();
 
+        [DllImport("user32.dll")]
+        public static extern IntPtr SendMessageW(IntPtr hWnd, int Msg,
+            IntPtr wParam, IntPtr lParam);
+
         #endregion
 
         private void makeKeyPress(uint key)
@@ -170,6 +174,14 @@ namespace IronManConsole
             return hw.Title;
         }
 
+        public void VolUp()
+        {
+            keybd_event((byte)Keys.VolumeUp, 0, 0, 0); 
+        }
 
+        public void VolDown()
+        {
+            keybd_event((byte)Keys.VolumeDown, 0, 0, 0);
+        }
     }
 }
