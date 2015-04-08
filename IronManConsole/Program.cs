@@ -11,7 +11,8 @@ namespace IronManConsole
     {
         static void Main(string[] args)
         {
-            Win32framework a = new Win32framework();
+            new App().run();
+            Console.Read();
             
         }
     }

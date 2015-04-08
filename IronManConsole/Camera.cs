@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
@@ -17,7 +18,6 @@ namespace IronManConsole
     {
         const int WIDTH = 640;
         const int HEIGHT = 480;
-        private const int FRAMES_WAIT = 0;
 
         private Win32framework win;
 
@@ -27,25 +27,21 @@ namespace IronManConsole
         private PXCMSenseManager _mngr;
         private PXCMSenseManager.Handler _handler;
 
-        private Hand hand;
+        private Dictionary<int, Hand> hands;
+        private ConcurrentDictionary<int, Hand> waitingHands;
 
         private PXCMHandModule _hand;
         private PXCMHandData _handData;
-        private Point lastLocation;
-
-        private Status status;
-        private int countFrames;
 
         private PXCMHandConfiguration.OnFiredGestureDelegate[] delegates;
         private PXCMHandData.AlertData lastAlertData;
 
         public Camera(params PXCMHandConfiguration.OnFiredGestureDelegate[] dlgts)
         {
+            this.hands = new Dictionary<int, Hand>();
+            this.waitingHands = new ConcurrentDictionary<int, Hand>();
             this.win = new Win32framework();
             this.delegates = dlgts;
-
-            this.status = Status.none;
-            this.countFrames = 0;
 
             // Create the manager
             this._session = PXCMSession.CreateInstance();
@@ -68,8 +64,8 @@ namespace IronManConsole
             PXCMHandConfiguration conf = this._hand.CreateActiveConfiguration();
             //conf.EnableGesture("thumb_up", false);
             //conf.EnableGesture("swipe_left", false);
-            //conf.EnableGesture("swipe_up", false);
-            //conf.EnableGesture("swipe_down", false);
+            conf.EnableGesture("swipe_up", false);
+            conf.EnableGesture("swipe_down", false);
             //conf.EnableGesture("swipe_right", false);
             conf.EnableGesture("spreadfingers", false);
 
@@ -107,96 +103,122 @@ namespace IronManConsole
             if (mid == PXCMHandModule.CUID)
             {
                 this._handData.Update();
-                this.updateHand();
+                this.updateHands();
 
-                
+
             }
 
             return pxcmStatus.PXCM_STATUS_NO_ERROR;
         }
 
-        private void updateHand()
+        private void updateHands()
         {
             int numberOfHands = this._handData.QueryNumberOfHands();
-            if (numberOfHands < 1) return;
 
-            if (this.status == Status.afterSpreadfingers)
+            this.hands.Clear();
+
+            for (int handIndex = 0; handIndex < numberOfHands; handIndex++)
             {
-                if (this.countFrames == FRAMES_WAIT)
-                {
-                    var x = this.hand.Middle.Tip.X;
+                PXCMHandData.IHand currentHandData;
+                PXCMHandData.GestureData currentGestureData;
 
-                    if (Math.Abs(x - this.lastLocation.X) > 100)
+                this._handData.QueryFiredGestureData(0, out currentGestureData);
+
+                this._handData.QueryHandData(PXCMHandData.AccessOrderType.ACCESS_ORDER_BY_TIME, handIndex, out currentHandData);
+
+                //currentHandData.QueryBodySide();
+
+                var center = GetPointFromJoint(currentHandData, PXCMHandData.JointType.JOINT_CENTER);
+
+                Hand h = new Hand
+                {
+                    Thumb = new Finger
                     {
-                        this.countFrames = 0;
-                        this.status = Status.none;
-                        if (x < this.lastLocation.X)
+                        Tip = GetPointFromJoint(currentHandData, PXCMHandData.JointType.JOINT_THUMB_TIP),
+                        BelowTip = GetPointFromJoint(currentHandData, PXCMHandData.JointType.JOINT_THUMB_JT2),
+                        AboveBase = GetPointFromJoint(currentHandData, PXCMHandData.JointType.JOINT_THUMB_JT1),
+                        Base = GetPointFromJoint(currentHandData, PXCMHandData.JointType.JOINT_THUMB_BASE),
+                        Center = center
+                    },
+                    Index = new Finger
+                    {
+                        Tip = GetPointFromJoint(currentHandData, PXCMHandData.JointType.JOINT_INDEX_TIP),
+                        BelowTip = GetPointFromJoint(currentHandData, PXCMHandData.JointType.JOINT_INDEX_JT2),
+                        AboveBase = GetPointFromJoint(currentHandData, PXCMHandData.JointType.JOINT_INDEX_JT1),
+                        Base = GetPointFromJoint(currentHandData, PXCMHandData.JointType.JOINT_INDEX_BASE),
+                        Center = center
+                    },
+                    Middle = new Finger
+                    {
+                        Tip = GetPointFromJoint(currentHandData, PXCMHandData.JointType.JOINT_MIDDLE_TIP),
+                        BelowTip = GetPointFromJoint(currentHandData, PXCMHandData.JointType.JOINT_MIDDLE_JT2),
+                        AboveBase = GetPointFromJoint(currentHandData, PXCMHandData.JointType.JOINT_MIDDLE_JT1),
+                        Base = GetPointFromJoint(currentHandData, PXCMHandData.JointType.JOINT_MIDDLE_BASE),
+                        Center = center
+                    },
+                    Ring = new Finger
+                    {
+                        Tip = GetPointFromJoint(currentHandData, PXCMHandData.JointType.JOINT_RING_TIP),
+                        BelowTip = GetPointFromJoint(currentHandData, PXCMHandData.JointType.JOINT_RING_JT2),
+                        AboveBase = GetPointFromJoint(currentHandData, PXCMHandData.JointType.JOINT_RING_JT1),
+                        Base = GetPointFromJoint(currentHandData, PXCMHandData.JointType.JOINT_RING_BASE),
+                        Center = center
+                    },
+                    Pinky = new Finger
+                    {
+                        Tip = GetPointFromJoint(currentHandData, PXCMHandData.JointType.JOINT_PINKY_TIP),
+                        BelowTip = GetPointFromJoint(currentHandData, PXCMHandData.JointType.JOINT_PINKY_JT2),
+                        AboveBase = GetPointFromJoint(currentHandData, PXCMHandData.JointType.JOINT_PINKY_JT1),
+                        Base = GetPointFromJoint(currentHandData, PXCMHandData.JointType.JOINT_PINKY_BASE),
+                        Center = center
+                    },
+                    Status = Status.none
+                };
+
+                this.hands.Add(currentHandData.QueryUniqueId(), h);
+            }
+
+            foreach (var handId in this.waitingHands.Keys)
+            {
+                if (this.hands.ContainsKey(handId))
+                {
+                    var currentHand = this.hands[handId];
+                    var waitingHand = this.waitingHands[handId];
+
+                    currentHand.Status = waitingHand.Status;
+
+                    if (waitingHand.Status == Status.afterSpreadfingers)
+                    {
+                        var newX = currentHand.Middle.Tip.X;
+                        var oldX = waitingHand.Middle.Tip.X;
+                        
+
+                        if (Math.Abs(newX - oldX) > 100)
                         {
-                            Console.WriteLine("Left");
-                        }
-                        else
-                        {
-                            Console.WriteLine("Right");
+                            if (newX < oldX)
+                            {
+                                Console.WriteLine("Left");
+                                this.win.KeyLeft();
+                            }
+                            else
+                            {
+                                Console.WriteLine("Right");
+                                this.win.KeyRight();
+                            }
+
+                            Hand x;
+                            this.waitingHands.TryRemove(handId, out x);
                         }
                     }
                 }
                 else
                 {
-                    this.countFrames++;
+                    Hand x;
+                    this.waitingHands.TryRemove(handId, out x);
                 }
             }
 
-            PXCMHandData.IHand currentHandData;
-            this._handData.QueryHandData(PXCMHandData.AccessOrderType.ACCESS_ORDER_BY_TIME, 0, out currentHandData);
-
-            var center = GetPointFromJoint(currentHandData, PXCMHandData.JointType.JOINT_CENTER);
-
-            Hand h = new Hand
-            {
-                Thumb = new Finger
-                {
-                    Tip = GetPointFromJoint(currentHandData, PXCMHandData.JointType.JOINT_THUMB_TIP),
-                    BelowTip = GetPointFromJoint(currentHandData, PXCMHandData.JointType.JOINT_THUMB_JT2),
-                    AboveBase = GetPointFromJoint(currentHandData, PXCMHandData.JointType.JOINT_THUMB_JT1),
-                    Base = GetPointFromJoint(currentHandData, PXCMHandData.JointType.JOINT_THUMB_BASE),
-                    Center = center
-                },
-                Index = new Finger
-                {
-                    Tip = GetPointFromJoint(currentHandData, PXCMHandData.JointType.JOINT_INDEX_TIP),
-                    BelowTip = GetPointFromJoint(currentHandData, PXCMHandData.JointType.JOINT_INDEX_JT2),
-                    AboveBase = GetPointFromJoint(currentHandData, PXCMHandData.JointType.JOINT_INDEX_JT1),
-                    Base = GetPointFromJoint(currentHandData, PXCMHandData.JointType.JOINT_INDEX_BASE),
-                    Center = center
-                },
-                Middle = new Finger
-                {
-                    Tip = GetPointFromJoint(currentHandData, PXCMHandData.JointType.JOINT_MIDDLE_TIP),
-                    BelowTip = GetPointFromJoint(currentHandData, PXCMHandData.JointType.JOINT_MIDDLE_JT2),
-                    AboveBase = GetPointFromJoint(currentHandData, PXCMHandData.JointType.JOINT_MIDDLE_JT1),
-                    Base = GetPointFromJoint(currentHandData, PXCMHandData.JointType.JOINT_MIDDLE_BASE),
-                    Center = center
-                },
-                Ring = new Finger
-                {
-                    Tip = GetPointFromJoint(currentHandData, PXCMHandData.JointType.JOINT_RING_TIP),
-                    BelowTip = GetPointFromJoint(currentHandData, PXCMHandData.JointType.JOINT_RING_JT2),
-                    AboveBase = GetPointFromJoint(currentHandData, PXCMHandData.JointType.JOINT_RING_JT1),
-                    Base = GetPointFromJoint(currentHandData, PXCMHandData.JointType.JOINT_RING_BASE),
-                    Center = center
-                },
-                Pinky = new Finger
-                {
-                    Tip = GetPointFromJoint(currentHandData, PXCMHandData.JointType.JOINT_PINKY_TIP),
-                    BelowTip = GetPointFromJoint(currentHandData, PXCMHandData.JointType.JOINT_PINKY_JT2),
-                    AboveBase = GetPointFromJoint(currentHandData, PXCMHandData.JointType.JOINT_PINKY_JT1),
-                    Base = GetPointFromJoint(currentHandData, PXCMHandData.JointType.JOINT_PINKY_BASE),
-                    Center = center
-                }
-            };
-            this.hand = h;
-
-            Console.WriteLine(this.hand.CountFingers()); 
+            //Console.WriteLine(this.hand.CountFingers()); 
         }
 
         private static Point GetPointFromJoint(PXCMHandData.IHand currentHandData, PXCMHandData.JointType jointType)
@@ -213,35 +235,52 @@ namespace IronManConsole
             };
         }
 
-        private void alertForEveryHand()
-        {
-            int numberOfHands = this._handData.QueryNumberOfHands();
-            if (numberOfHands < 1) return;
-            PXCMHandData.IHand currentHandData;
-            PXCMHandData.JointData indexFingerJointData;
-            this._handData.QueryHandData(PXCMHandData.AccessOrderType.ACCESS_ORDER_BY_TIME, 0, out currentHandData);
-            currentHandData.QueryTrackedJoint(PXCMHandData.JointType.JOINT_INDEX_TIP, out indexFingerJointData);
-            var positionImage = indexFingerJointData.positionImage;
-            //Console.WriteLine("{0} {1}", positionImage.x, positionImage.y);
-
-            int x = (int)(((WIDTH - positionImage.x) / WIDTH) * System.Windows.Forms.Screen.PrimaryScreen.Bounds.Width);
-            int y = (int)((positionImage.y / HEIGHT) * System.Windows.Forms.Screen.PrimaryScreen.Bounds.Height);
-        }
 
         private void onFiredGesture(PXCMHandData.GestureData gestureData)
         {
-            if (this.hand == null) return;
-
             PXCMHandData.IHand currentHandData;
             //Console.WriteLine(gestureData.name + ": " + gestureData.state);
+
+            if (!this.hands.ContainsKey(gestureData.handId)) return;
+            var hand = this.hands[gestureData.handId];
+
             this._handData.QueryHandDataById(gestureData.handId, out currentHandData);
             if (gestureData.state == PXCMHandData.GestureStateType.GESTURE_STATE_START)
             {
-                if (gestureData.name == "spreadfingers" && this.status == Status.none)
+                if (gestureData.name == "spreadfingers")
                 {
-                    Console.Beep();
-                    this.status = Status.afterSpreadfingers;
-                    this.lastLocation = this.hand.Middle.Tip;
+                    if (hand.Status == Status.none)
+                    {
+                        Console.Beep();
+                        hand.Status = Status.afterSpreadfingers;
+                        this.waitingHands.TryAdd(gestureData.handId, hand);
+                    }
+                }
+                else if (waitingHands.ContainsKey(gestureData.handId))
+                {
+                    var waitingHand = this.waitingHands[gestureData.handId];
+                    if (waitingHand.Status != Status.none)
+                    {
+                        switch (gestureData.name)
+                        {
+                            case "swipe_up":
+
+                                //this.win.KeyUp();
+                                Console.WriteLine("Up");
+                                break;
+                            case "swipe_down":
+                                // this.win.KeyDown();
+                                Console.WriteLine("Down");
+                                break;
+                            default:
+                                break;
+                        }
+
+                        Hand x;
+                        this.waitingHands.TryRemove(gestureData.handId,out x);
+                    }
+
+                    hand.Status = Status.none;
                 }
             }
         }
