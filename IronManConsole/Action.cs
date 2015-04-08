@@ -7,9 +7,11 @@ using System.Threading.Tasks;
 
 namespace IronManConsole
 {
-    class Action
+    public class Action
     {
         private Win32framework win;
+
+        public const int PINCH_INTERVAL = 1;
 
         private bool isSlide()
         {
@@ -64,9 +66,13 @@ namespace IronManConsole
 
         public void Pinch(int size, Point location)
         {
-            if (!this.isSlide())
+            if (!this.isSlide() && size != 0)
             {
-                win.ResizeWindow(size, location);
+                int j = size / PINCH_INTERVAL;
+                for (int i = 0; i < PINCH_INTERVAL; i++)
+                {
+                    win.ResizeWindow(j, location);
+                }
             }
         }
 

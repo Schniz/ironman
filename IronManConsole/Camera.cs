@@ -39,6 +39,7 @@ namespace IronManConsole
         private Hand leftHand;
 
         private int rockCounter;
+        private int pinchCounter;
 
         private Status status;
 
@@ -125,8 +126,12 @@ namespace IronManConsole
 
         void pinchTimer_Elapsed(object sender, ElapsedEventArgs e)
         {
+            this.pinchCounter = 0;
             Console.WriteLine("pinch timer");
-            this.status = Status.none;
+            if (this.status == Status.pinch)
+            {
+                this.status = Status.none;
+            }
             this.pinchTimer.Stop();
         }
 
@@ -222,29 +227,35 @@ namespace IronManConsole
 
                 if (this.status == Status.pinch)
                 {
-                    var oldDistance = Math.Sqrt(Math.Pow(this.lastLeftLocation.X - this.lastRightLocation.X, 2) + Math.Pow(this.lastLeftLocation.Y - this.lastRightLocation.Y, 2));
-                    var newDistance = Math.Sqrt(Math.Pow(this.leftHand.Index.Tip.X - this.rightHand.Index.Tip.X, 2) + Math.Pow(this.leftHand.Index.Tip.Y - this.rightHand.Index.Tip.Y, 2));
-
-                    var oldAverage = new Point
+                    if (this.pinchCounter < Action.PINCH_INTERVAL)
                     {
-                        X = (this.lastLeftLocation.X + this.lastRightLocation.X) / 2,
-                        Y = (this.lastLeftLocation.Y + this.lastRightLocation.Y) / 2
-                    };
-
-                    var newAverage = new Point
+                        this.pinchCounter++;
+                    }
+                    else
                     {
-                        X = (this.leftHand.Index.Tip.X + this.rightHand.Index.Tip.X) / 2,
-                        Y = (this.leftHand.Index.Tip.Y + this.rightHand.Index.Tip.Y) / 2
-                    };
+                        this.pinchCounter = 0;
 
-                    this.lastLeftLocation = this.leftHand.Index.Tip;
-                    this.lastRightLocation = this.rightHand.Index.Tip;
+                        var oldDistance = Math.Sqrt(Math.Pow(this.lastLeftLocation.X - this.lastRightLocation.X, 2) + Math.Pow(this.lastLeftLocation.Y - this.lastRightLocation.Y, 2));
+                        var newDistance = Math.Sqrt(Math.Pow(this.leftHand.Index.Tip.X - this.rightHand.Index.Tip.X, 2) + Math.Pow(this.leftHand.Index.Tip.Y - this.rightHand.Index.Tip.Y, 2));
 
-                    this.action.Pinch((int)(newDistance - oldDistance), new Point
-                    {
-                        X = 0,
-                        Y = 0
-                    });
+                        var oldAverage = new Point
+                        {
+                            X = (this.lastLeftLocation.X + this.lastRightLocation.X) / 2,
+                            Y = (this.lastLeftLocation.Y + this.lastRightLocation.Y) / 2
+                        };
+
+                        var newAverage = new Point
+                        {
+                            X = (this.leftHand.Index.Tip.X + this.rightHand.Index.Tip.X) / 2,
+                            Y = (this.leftHand.Index.Tip.Y + this.rightHand.Index.Tip.Y) / 2
+                        };
+
+                        this.lastLeftLocation = this.leftHand.Index.Tip;
+                        this.lastRightLocation = this.rightHand.Index.Tip;
+
+                        this.action.Pinch((int)(newDistance - oldDistance),new Point());
+                    }
+
 
                     //Console.WriteLine("diff:" + (oldDistance - newDistance).ToString());
                 }
@@ -392,12 +403,12 @@ namespace IronManConsole
                 if (newLoc.X < oldLoc.X)
                 {
                     Console.WriteLine("Left");
-                    //this.action.Left();
+                    this.action.Left();
                 }
                 else
                 {
                     Console.WriteLine("Right");
-                    //this.action.Right();
+                    this.action.Right();
                 }
 
                 return true;
@@ -408,12 +419,12 @@ namespace IronManConsole
                 if (newLoc.Y < oldLoc.Y)
                 {
                     Console.WriteLine("Up");
-                    //this.action.Up();
+                    this.action.Up();
                 }
                 else
                 {
                     Console.WriteLine("Down");
-                    //this.action.Down();
+                    this.action.Down();
                 }
 
                 return true;
