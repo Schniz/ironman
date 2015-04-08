@@ -24,7 +24,7 @@ namespace IronManConsole
             }
             else
             {
-                win.AltCtrlTab();
+                win.altEscape();
             }
         }
 
@@ -36,7 +36,7 @@ namespace IronManConsole
             }
             else
             {
-                win.AltCtrlTab();
+                win.altShiftEscape();
             }
 
         }

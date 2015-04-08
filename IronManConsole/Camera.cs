@@ -24,7 +24,7 @@ namespace IronManConsole
         private System.Timers.Timer directionTimer;
         private System.Timers.Timer pinchTimer;
 
-        private Win32framework win;
+        private Action action;
 
         private MedianStuff cursorMedian = new MedianStuff();
 
@@ -47,7 +47,7 @@ namespace IronManConsole
 
         public Camera(params PXCMHandConfiguration.OnFiredGestureDelegate[] dlgts)
         {
-            this.win = new Win32framework();
+            this.action = new Action();
             this.delegates = dlgts;
 
             directionTimer = new System.Timers.Timer(1000);
@@ -163,7 +163,7 @@ namespace IronManConsole
                 }
                 else if (side == PXCMHandData.BodySideType.BODY_SIDE_LEFT)
                 {
-                    this.leftHand= GetHandData(currentHandData);
+                    this.leftHand = GetHandData(currentHandData);
                     hand = this.leftHand;
                 }
                 else
@@ -190,14 +190,14 @@ namespace IronManConsole
 
                         this.lastLeftLocation = this.leftHand.Index.Tip;
                         this.lastRightLocation = this.rightHand.Index.Tip;
-                        
+
                     }
-                    else if(this.status == Status.pinch)
+                    else if (this.status == Status.pinch)
                     {
                         this.pinchTimer.Stop();
                         this.pinchTimer.Start();
                     }
-                    
+
                 }
 
                 if (this.status == Status.pinch)
@@ -220,7 +220,7 @@ namespace IronManConsole
                     this.lastLeftLocation = this.leftHand.Index.Tip;
                     this.lastRightLocation = this.rightHand.Index.Tip;
 
-                    win.ResizeWindow((int)(newDistance - oldDistance), new Point
+                    this.action.Pinch((int)(newDistance - oldDistance), new Point
                     {
                         X = 0,
                         Y = 0
@@ -328,33 +328,33 @@ namespace IronManConsole
             var diffX = Math.Abs(newLoc.X - oldLoc.X) + 70;
             var diffY = Math.Abs(newLoc.Y - oldLoc.Y);
 
-            if (diffX > 220  && diffX > diffY)
+            if (diffX > 220 && diffX > diffY)
             {
                 if (newLoc.X < oldLoc.X)
                 {
                     Console.WriteLine("Left");
-                    this.win.KeyLeft();
+                    this.action.Left();
                 }
                 else
                 {
                     Console.WriteLine("Right");
-                    this.win.KeyRight();
+                    this.action.Right();
                 }
 
                 return true;
-                
+
             }
             else if (diffY > 100 && diffY >= diffX)
             {
                 if (newLoc.Y < oldLoc.Y)
                 {
                     Console.WriteLine("Up");
-                    this.win.KeyUp();
+                    this.action.Up();
                 }
                 else
                 {
                     Console.WriteLine("Down");
-                    //this.win.KeyDown();
+                    this.action.Down();
                 }
 
                 return true;

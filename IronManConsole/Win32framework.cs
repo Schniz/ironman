@@ -70,11 +70,11 @@ namespace IronManConsole
                 keybd_event(keys[i], 0, 0, 0);
             }
 
-            Thread.Sleep(1000);
+            Thread.Sleep(50);
 
             for (int i = keys.Length - 1; i >= 0; i--)
             {
-                keybd_event(keys[i], 0, KEYEVENTF_KEYUP | KEYEVENTF_EXTENDED, 0);
+                keybd_event(keys[i], 0, KEYEVENTF_KEYUP, 0);
             }
         }
 
@@ -85,7 +85,7 @@ namespace IronManConsole
 
         public void WinUp()
         {
-            this.combineKeyPress(new uint[] { VK_UP, VK_DOWN });
+            this.combineKeyPress(new uint[] { VK_LWIN, VK_UP });
         }
 
 
@@ -159,12 +159,17 @@ namespace IronManConsole
             this.makeKeyPress(VK_DOWN);
         }
 
-        public void AltCtrlTab()
+        public void altShiftEscape()
         {
 
-            uint[] altCtrlTab = {VK_ALT};
+            this.combineKeyPress(new uint[] { VK_ALT, (uint)Keys.LShiftKey, (uint)Keys.Escape });
+        }
 
-            this.combineKeyPress(new uint[] { VK_ALT,VK_CTRL, VK_TAB });
+
+        public void altEscape()
+        {
+            this.combineKeyPress(new uint[] { VK_ALT, (uint)Keys.Escape });
+
         }
 
         public void ResizeWindow(int size, Point location)
@@ -173,8 +178,8 @@ namespace IronManConsole
             WindowScrape.Types.HwndObject hw = new WindowScrape.Types.HwndObject(a);
             Point pnt = hw.Location;
             Size oldSize = hw.Size;
-            
-            MoveWindow(a, pnt.X - size/2 + location.X, pnt.Y - size/2 + location.Y, oldSize.Width + size, oldSize.Height + size, true);
+
+            MoveWindow(a, pnt.X - size / 2 + location.X, pnt.Y - size / 2 + location.Y, oldSize.Width + size, oldSize.Height + size, true);
         }
 
         /// <summary>
@@ -187,6 +192,7 @@ namespace IronManConsole
             WindowScrape.Types.HwndObject hw = new WindowScrape.Types.HwndObject(a);
             return hw.Title;
         }
+
 
 
     }
