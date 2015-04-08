@@ -177,14 +177,14 @@ namespace IronManConsole
 
         }
 
-        public void ResizeWindow(int size, Point location)
+        public void ResizeWindow(Point delta)
         {
             IntPtr a = GetForegroundWindow();
             WindowScrape.Types.HwndObject hw = new WindowScrape.Types.HwndObject(a);
             Point pnt = hw.Location;
             Size oldSize = hw.Size;
             
-            MoveWindow(a, pnt.X - size / 2 + location.X, pnt.Y - size / 2 + location.Y, oldSize.Width + size, oldSize.Height + size, true);
+            MoveWindow(a, pnt.X - delta.X / 2, pnt.Y - delta.Y / 2 , oldSize.Width + delta.X, oldSize.Height + delta.Y, true);
         }
 
         /// <summary>

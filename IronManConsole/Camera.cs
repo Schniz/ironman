@@ -17,6 +17,10 @@ namespace IronManConsole
         pinch,
         rock
     }
+    public class StatusEventArgs : EventArgs
+    {
+        public Status status;
+    }
     public class Camera
     {
         const int WIDTH = 640;
@@ -29,7 +33,6 @@ namespace IronManConsole
 
         private Action action;
 
-        private MedianStuff cursorMedian = new MedianStuff();
 
         private PXCMSession _session;
         private PXCMSenseManager _mngr;
@@ -41,7 +44,19 @@ namespace IronManConsole
         private int rockCounter;
         private int pinchCounter;
 
-        private Status status;
+        private Status _status;
+
+        public event EventHandler<StatusEventArgs> StatusChanged;
+
+        public Status status
+        {
+            get { return _status; }
+            set { 
+                _status = value;
+                StatusChanged(this, new StatusEventArgs { status = _status });
+            }
+        }
+
 
         private Point lastRightLocation;
         private Point lastLeftLocation;
@@ -49,12 +64,10 @@ namespace IronManConsole
         private PXCMHandModule _hand;
         private PXCMHandData _handData;
 
-        private PXCMHandConfiguration.OnFiredGestureDelegate[] delegates;
-
-        public Camera(params PXCMHandConfiguration.OnFiredGestureDelegate[] dlgts)
+        public Camera()
         {
+            
             this.action = new Action();
-            this.delegates = dlgts;
 
             this.rockCounter = 0;
 
@@ -86,12 +99,6 @@ namespace IronManConsole
 
             // Hands config
             PXCMHandConfiguration conf = this._hand.CreateActiveConfiguration();
-            //conf.EnableGesture("thumb_up", false);
-            //conf.EnableGesture("swipe_left", false);
-            //conf.EnableGesture("swipe_up", false);
-            //conf.EnableGesture("swipe_down", false);
-            //conf.EnableGesture("swipe_right", false);
-            //conf.EnableGesture("spreadfingers", false);
             conf.EnableGesture("two_fingers_pinch_open", true);
 
             // Subscribe hands alerts
@@ -116,13 +123,13 @@ namespace IronManConsole
         void rockTimer_Elapsed(object sender, ElapsedEventArgs e)
         {
             this.rockCounter = 0;
-            if(this.status == Status.rock)
+            if (this.status == Status.rock)
             {
                 Console.WriteLine("rock timer");
                 this.status = Status.none;
             }
             this.rockTimer.Stop();
-            
+
         }
 
         void pinchTimer_Elapsed(object sender, ElapsedEventArgs e)
@@ -236,25 +243,25 @@ namespace IronManConsole
                     {
                         this.pinchCounter = 0;
 
-                        var oldDistance = Math.Sqrt(Math.Pow(this.lastLeftLocation.X - this.lastRightLocation.X, 2) + Math.Pow(this.lastLeftLocation.Y - this.lastRightLocation.Y, 2));
-                        var newDistance = Math.Sqrt(Math.Pow(this.leftHand.Index.Center.X - this.rightHand.Index.Center.X, 2) + Math.Pow(this.leftHand.Index.Center.Y - this.rightHand.Index.Center.Y, 2));
+                        //var oldDistance = Math.Sqrt(Math.Pow(this.lastLeftLocation.X - this.lastRightLocation.X, 2) + Math.Pow(this.lastLeftLocation.Y - this.lastRightLocation.Y, 2));
+                        //var newDistance = Math.Sqrt(Math.Pow(this.leftHand.Index.Center.X - this.rightHand.Index.Center.X, 2) + Math.Pow(this.leftHand.Index.Center.Y - this.rightHand.Index.Center.Y, 2));
 
-                        var oldAverage = new Point
-                        {
-                            X = (this.lastLeftLocation.X + this.lastRightLocation.X) / 2,
-                            Y = (this.lastLeftLocation.Y + this.lastRightLocation.Y) / 2
-                        };
+                        //this.lastLeftLocation = this.leftHand.Index.Center;
+                        //this.lastRightLocation = this.rightHand.Index.Center;
 
-                        var newAverage = new Point
+                        //this.action.Pinch((int)(newDistance - oldDistance),new Point());
+
+                        var oldDelta = calculateDelta(this.lastLeftLocation, this.lastRightLocation);
+                        var newDelta = calculateDelta(this.leftHand.Index.Center, this.rightHand.Index.Center);
+
+                        this.action.Pinch(new Point
                         {
-                            X = (this.leftHand.Index.Center.X + this.rightHand.Index.Center.X) / 2,
-                            Y = (this.leftHand.Index.Center.Y + this.rightHand.Index.Center.Y) / 2
-                        };
+                            X = newDelta.X - oldDelta.X,
+                            Y = newDelta.Y - oldDelta.Y
+                        });
 
                         this.lastLeftLocation = this.leftHand.Index.Center;
                         this.lastRightLocation = this.rightHand.Index.Center;
-
-                        this.action.Pinch((int)(newDistance - oldDistance),new Point());
                     }
 
 
@@ -336,6 +343,15 @@ namespace IronManConsole
                 //        this.leftHand != null ? this.leftHand.Gestrue : "\t\t",
                 //        this.rightHand != null ? this.rightHand.Gestrue : "\t\t");
             }
+        }
+
+        private Point calculateDelta(Point left, Point right)
+        {
+            return new Point
+            {
+                X = Math.Abs(right.X - left.X),
+                Y = Math.Abs(right.Y - left.Y)
+            };
         }
 
         private Hand GetHandData(PXCMHandData.IHand currentHandData)

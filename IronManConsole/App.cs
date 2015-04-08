@@ -14,21 +14,8 @@ namespace IronManConsole
         public void run()
         {
             System.Threading.Thread.CurrentThread.Name = "RUNNER";
-            this.cam = new Camera(this.onFiredGesture);
+            this.cam = new Camera();
             this.cam.Start();
-        }
-
-        private void onFiredGesture(PXCMHandData.GestureData gestureData)
-        {
-            if (gestureData.name.CompareTo("spreadfingers") == 0)
-            {
-                Console.WriteLine("spreadfingers");
-            }
-
-            if (gestureData.name.CompareTo("thumb_up") == 0)
-            {
-                Console.WriteLine("thumbs");
-            }
         }
     }
 }

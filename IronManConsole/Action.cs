@@ -64,14 +64,13 @@ namespace IronManConsole
             }
         }
 
-        public void Pinch(int size, Point location)
+        public void Pinch(Point delta)
         {
-            if (!this.isSlide() && size != 0)
+            if (!this.isSlide())
             {
-                int j = size / PINCH_INTERVAL;
                 for (int i = 0; i < PINCH_INTERVAL; i++)
                 {
-                    win.ResizeWindow(j, location);
+                    win.ResizeWindow(delta);
                 }
             }
         }
