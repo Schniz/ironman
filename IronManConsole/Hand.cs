@@ -15,8 +15,6 @@ namespace IronManConsole
         public Finger Ring { get; set; }
         public Finger Pinky { get; set; }
 
-        public Status Status { get; set; }
-
         public int CountFingers()
         {
             int fingers = 4;
