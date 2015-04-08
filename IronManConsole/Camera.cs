@@ -404,12 +404,12 @@ namespace IronManConsole
                 if (newLoc.X < oldLoc.X)
                 {
                     Console.WriteLine("Left");
-                    //this.action.Left();
+                    this.action.Left();
                 }
                 else
                 {
                     Console.WriteLine("Right");
-                    //this.action.Right();
+                    this.action.Right();
                 }
 
                 return true;
@@ -420,12 +420,12 @@ namespace IronManConsole
                 if (newLoc.Y < oldLoc.Y)
                 {
                     Console.WriteLine("Up");
-                    //this.action.Up();
+                    this.action.Up();
                 }
                 else
                 {
                     Console.WriteLine("Down");
-                    //this.action.Down();
+                    this.action.Down();
                 }
 
                 return true;
