@@ -21,6 +21,7 @@ namespace IronManConsole
     {
         const int WIDTH = 640;
         const int HEIGHT = 480;
+        const int MAX_ROCK_FRAMES = 20;
 
         private System.Timers.Timer directionTimer;
         private System.Timers.Timer pinchTimer;
@@ -37,6 +38,8 @@ namespace IronManConsole
         private Hand rightHand;
         private Hand leftHand;
 
+        private int rockCounter;
+
         private Status status;
 
         private Point lastRightLocation;
@@ -51,6 +54,8 @@ namespace IronManConsole
         {
             this.action = new Action();
             this.delegates = dlgts;
+
+            this.rockCounter = 0;
 
             directionTimer = new System.Timers.Timer(1000);
             directionTimer.Elapsed += directionTimer_Elapsed;
@@ -109,9 +114,13 @@ namespace IronManConsole
 
         void rockTimer_Elapsed(object sender, ElapsedEventArgs e)
         {
-            Console.WriteLine("rock timer");
-            this.status = Status.none;
+            this.rockCounter = 0;
+            if(this.status == Status.rock)
+            {
+                this.status = Status.none;
+            }
             this.rockTimer.Stop();
+            
         }
 
         void pinchTimer_Elapsed(object sender, ElapsedEventArgs e)
@@ -237,7 +246,7 @@ namespace IronManConsole
                         Y = 0
                     });
 
-                    Console.WriteLine("diff:" + (oldDistance - newDistance).ToString());
+                    //Console.WriteLine("diff:" + (oldDistance - newDistance).ToString());
                 }
             }
 
@@ -247,17 +256,19 @@ namespace IronManConsole
                 {
                     if (this.status == Status.none)
                     {
-                        this.status = Status.rock;
-                        this.rockTimer.Start();
-
-                        this.lastRightLocation = this.rightHand.Index.Tip;
-
+                        if (rockCounter < MAX_ROCK_FRAMES)
+                        {
+                            rockCounter++;
+                        }
+                        else
+                        {
+                            this.status = Status.rock;
+                            this.lastRightLocation = this.rightHand.Index.Tip;
+                        }
                     }
-                    else if (this.status == Status.rock)
-                    {
-                        this.rockTimer.Stop();
-                        this.rockTimer.Start();
-                    }
+
+                    this.rockTimer.Stop();
+                    this.rockTimer.Start();
                 }
 
                 if (this.status == Status.rock)
@@ -286,7 +297,7 @@ namespace IronManConsole
                     {
                         this.directionTimer.Stop();
                         this.status = Status.none;
-                        Thread.Sleep(500);
+                        //Thread.Sleep(500);
                     }
                 }
                 else if (this.rightHand.z < 0.4 && this.rightHand.Middle.Tip.X > 200 && this.rightHand.Middle.Tip.X < 450 && this.rightHand.Middle.Tip.Y > 150 && this.rightHand.Middle.Tip.Y < 300)
@@ -295,7 +306,7 @@ namespace IronManConsole
                     {
                         this.status = Status.afterSpreadfingers;
                         this.lastRightLocation = this.rightHand.Middle.Tip;
-                        Console.Beep(880, 300);
+                        //Console.Beep(880, 300);
                         this.directionTimer.Start();
                     }
                 }
@@ -381,12 +392,12 @@ namespace IronManConsole
                 if (newLoc.X < oldLoc.X)
                 {
                     Console.WriteLine("Left");
-                    this.action.Left();
+                    //this.action.Left();
                 }
                 else
                 {
                     Console.WriteLine("Right");
-                    this.action.Right();
+                    //this.action.Right();
                 }
 
                 return true;
@@ -397,12 +408,12 @@ namespace IronManConsole
                 if (newLoc.Y < oldLoc.Y)
                 {
                     Console.WriteLine("Up");
-                    this.action.Up();
+                    //this.action.Up();
                 }
                 else
                 {
                     Console.WriteLine("Down");
-                    this.action.Down();
+                    //this.action.Down();
                 }
 
                 return true;
