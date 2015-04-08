@@ -7,10 +7,10 @@ using System.Windows.Forms;
 using System.Drawing;
 using System.Runtime.InteropServices;
 using System.Threading;
+using WindowScrape;
 
 namespace IronManConsole
 {
-
 
     public class Win32framework
     {
@@ -41,6 +41,12 @@ namespace IronManConsole
 
         [DllImport("user32.dll")]
         private static extern bool keybd_event(uint bVk, byte bScan, uint dwFlags, int dwExtraInfo);
+
+        [DllImport("user32.dll", SetLastError = true)]
+        internal static extern bool MoveWindow(IntPtr hWnd, int X, int Y, int nWidth, int nHeight, bool bRepaint);
+
+        [DllImport("user32.dll")]
+        static extern IntPtr GetForegroundWindow();
 
         #endregion
 
@@ -130,5 +136,16 @@ namespace IronManConsole
 
             this.combineKeyPress(new uint[] { VK_ALT,VK_CTRL, VK_TAB });
         }
+
+        public void ResizeWindow(int size)
+        {
+            IntPtr a = GetForegroundWindow();
+            WindowScrape.Types.HwndObject hw = new WindowScrape.Types.HwndObject(a);
+            Point pnt = hw.Location;
+            Size oldSize = hw.Size;
+            
+            MoveWindow(a, pnt.X - size/2, pnt.Y - size/2, oldSize.Width + size, oldSize.Height + size, true);
+        }
+
     }
 }
