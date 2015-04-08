@@ -268,11 +268,11 @@ namespace IronManConsole
                     {
                         if (this.lastRightLocation.Y > this.rightHand.Index.Tip.Y)
                         {
-                            Console.WriteLine("increase");
+                            this.action.VolUp();
                         }
                         else
                         {
-                            Console.WriteLine("decrease");
+                            this.action.VolDown();
                         }
                     }
 

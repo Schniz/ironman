@@ -68,11 +68,13 @@ namespace IronManConsole
         public void VolUp()
         {
             this.win.VolUp();
+            this.win.VolUp();
         }
 
         public void VolDown()
         {
-            this.win.WinDown();
+            this.win.VolDown();
+            this.win.VolDown();
         }
     }
 }
