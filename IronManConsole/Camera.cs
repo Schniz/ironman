@@ -38,9 +38,6 @@ namespace IronManConsole
         private Point lastRightLocation;
         private Point lastLeftLocation;
 
-
-
-
         private PXCMHandModule _hand;
         private PXCMHandData _handData;
 
@@ -138,7 +135,7 @@ namespace IronManConsole
 
                 Hand hand = null;
 
-                if (side == PXCMHandData.BodySideType.BODY_SIDE_RIGHT)
+                if (side == PXCMHandData.BodySideType.BODY_SIDE_RIGHT || side == PXCMHandData.BodySideType.BODY_SIDE_LEFT)
                 {
                     this.rightHand = GetHandData(currentHandData, ref this.lastRightLocation, ref this.rightStatus);
                     hand = this.rightHand;
@@ -152,16 +149,21 @@ namespace IronManConsole
                 this._handData.QueryFiredGestureData(0, out currentGestureData);
             }
 
-            //if (numberOfHands > 0)
-            //{
-            //    Console.WriteLine("L:{0} \t\t R:{1}",
-            //            this.leftHand != null ? this.leftHand.Middle.Tip.ToString() + " - " + this.leftHand.CountFingers() : "\t\t",
-            //            this.rightHand != null ? this.rightHand.Middle.Tip.ToString() + " - " + this.rightHand.CountFingers() : "\t\t");
-            //}
+            if (numberOfHands > 0)
+            {
+                Console.WriteLine("L:{0} \t\t R:{1}",
+                        this.leftHand != null ? this.leftHand.Middle.Tip.ToString() + " - " + this.leftHand.CountFingers() : "\t\t",
+                        this.rightHand != null ? this.rightHand.Middle.Tip.ToString() + " - " + this.rightHand.CountFingers() + " z:" + this.rightHand.z : "\t\t");
+            }
         }
 
         private Hand GetHandData(PXCMHandData.IHand currentHandData, ref Point lastLocation, ref Status status)
         {
+            PXCMHandData.JointData jointData;
+            currentHandData.QueryTrackedJoint(PXCMHandData.JointType.JOINT_CENTER, out jointData);
+            var positionImage = jointData.positionWorld;
+            float z = positionImage.z;
+
             var center = GetPointFromJoint(currentHandData, PXCMHandData.JointType.JOINT_CENTER);
             Hand hand = new Hand
             {
@@ -204,10 +206,11 @@ namespace IronManConsole
                     AboveBase = GetPointFromJoint(currentHandData, PXCMHandData.JointType.JOINT_PINKY_JT1),
                     Base = GetPointFromJoint(currentHandData, PXCMHandData.JointType.JOINT_PINKY_BASE),
                     Center = center
-                }
+                },
+                z = z
             };
 
-            if (status == Status.afterSpreadfingers)
+            if (status == Status.afterSpreadfingers )
             {
                 var newX = hand.Middle.Tip.X;
                 var oldX = lastLocation.X;
@@ -227,10 +230,10 @@ namespace IronManConsole
                     }
 
                     status = Status.none;
-                    Thread.Sleep(500);
+                    //Thread.Sleep(500);
                 }
             }
-            else
+            else if (hand.z < 0.4 && hand.Middle.Tip.X > 200 && hand.Middle.Tip.X < 450 )
             {
                 if (hand.CountFingers() == 4)
                 {
