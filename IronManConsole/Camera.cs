@@ -6,7 +6,7 @@ using System.Drawing;
 using System.Linq;
 using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
+using System.Timers;
 
 namespace IronManConsole
 {
@@ -21,6 +21,9 @@ namespace IronManConsole
         const int WIDTH = 640;
         const int HEIGHT = 480;
 
+        private System.Timers.Timer directionTimer;
+        private System.Timers.Timer pinchTimer;
+
         private Win32framework win;
 
         private MedianStuff cursorMedian = new MedianStuff();
@@ -32,8 +35,7 @@ namespace IronManConsole
         private Hand rightHand;
         private Hand leftHand;
 
-        private Status rightStatus;
-        private Status leftStatus;
+        private Status status;
 
         private Point lastRightLocation;
         private Point lastLeftLocation;
@@ -47,6 +49,12 @@ namespace IronManConsole
         {
             this.win = new Win32framework();
             this.delegates = dlgts;
+
+            directionTimer = new System.Timers.Timer(1000);
+            directionTimer.Elapsed += directionTimer_Elapsed;
+
+            pinchTimer = new System.Timers.Timer(500);
+            pinchTimer.Elapsed += pinchTimer_Elapsed;
 
             // Create the manager
             this._session = PXCMSession.CreateInstance();
@@ -69,11 +77,11 @@ namespace IronManConsole
             PXCMHandConfiguration conf = this._hand.CreateActiveConfiguration();
             //conf.EnableGesture("thumb_up", false);
             //conf.EnableGesture("swipe_left", false);
-            conf.EnableGesture("swipe_up", false);
-            conf.EnableGesture("swipe_down", false);
+            //conf.EnableGesture("swipe_up", false);
+            //conf.EnableGesture("swipe_down", false);
             //conf.EnableGesture("swipe_right", false);
-            conf.EnableGesture("spreadfingers", false);
-            conf.EnableGesture("two_fingers_pinch");
+            //conf.EnableGesture("spreadfingers", false);
+            conf.EnableGesture("two_fingers_pinch_open", true);
 
             // Subscribe hands alerts
             conf.EnableAllAlerts();
@@ -94,6 +102,21 @@ namespace IronManConsole
             this._mngr.Init(this._handler);
         }
 
+        void pinchTimer_Elapsed(object sender, ElapsedEventArgs e)
+        {
+            Console.WriteLine("pinch timer");
+            this.status = Status.none;
+            this.pinchTimer.Stop();
+        }
+
+        void directionTimer_Elapsed(object sender, ElapsedEventArgs e)
+        {
+            Console.WriteLine("direction timer");
+
+            this.status = Status.none;
+            this.directionTimer.Stop();
+        }
+
         public void Start()
         {
             this._mngr.StreamFrames(false);
@@ -110,8 +133,6 @@ namespace IronManConsole
             {
                 this._handData.Update();
                 this.updateHands();
-
-
             }
 
             return pxcmStatus.PXCM_STATUS_NO_ERROR;
@@ -135,29 +156,118 @@ namespace IronManConsole
 
                 Hand hand = null;
 
-                if (side == PXCMHandData.BodySideType.BODY_SIDE_RIGHT || side == PXCMHandData.BodySideType.BODY_SIDE_LEFT)
+                if (side == PXCMHandData.BodySideType.BODY_SIDE_RIGHT)
                 {
-                    this.rightHand = GetHandData(currentHandData, ref this.lastRightLocation, ref this.rightStatus);
+                    this.rightHand = GetHandData(currentHandData);
                     hand = this.rightHand;
                 }
                 else if (side == PXCMHandData.BodySideType.BODY_SIDE_LEFT)
                 {
-                    this.leftHand= GetHandData(currentHandData, ref this.lastLeftLocation, ref this.leftStatus);
+                    this.leftHand= GetHandData(currentHandData);
                     hand = this.leftHand;
                 }
+                else
+                {
+                    return;
+                }
 
-                this._handData.QueryFiredGestureData(0, out currentGestureData);
+                this._handData.QueryFiredGestureData(handIndex, out currentGestureData);
+
+                if (currentGestureData != null && currentGestureData.name != "")
+                {
+                    hand.Gestrue = currentGestureData.name;
+                }
+            }
+
+            if (this.rightHand != null && this.leftHand != null)
+            {
+                if (this.rightHand.Gestrue == "two_fingers_pinch_open" && this.leftHand.Gestrue == "two_fingers_pinch_open")
+                {
+                    if (this.status == Status.none)
+                    {
+                        this.status = Status.pinch;
+                        this.pinchTimer.Start();
+
+                        this.lastLeftLocation = this.leftHand.Index.Tip;
+                        this.lastRightLocation = this.rightHand.Index.Tip;
+                        
+                    }
+                    else if(this.status == Status.pinch)
+                    {
+                        this.pinchTimer.Stop();
+                        this.pinchTimer.Start();
+                    }
+                    
+                }
+
+                if (this.status == Status.pinch)
+                {
+                    var oldDistance = Math.Sqrt(Math.Pow(this.lastLeftLocation.X - this.lastRightLocation.X, 2) + Math.Pow(this.lastLeftLocation.Y - this.lastRightLocation.Y, 2));
+                    var newDistance = Math.Sqrt(Math.Pow(this.leftHand.Index.Tip.X - this.rightHand.Index.Tip.X, 2) + Math.Pow(this.leftHand.Index.Tip.Y - this.rightHand.Index.Tip.Y, 2));
+
+                    var oldAverage = new Point
+                    {
+                        X = (this.lastLeftLocation.X + this.lastRightLocation.X) / 2,
+                        Y = (this.lastLeftLocation.Y + this.lastRightLocation.Y) / 2
+                    };
+
+                    var newAverage = new Point
+                    {
+                        X = (this.leftHand.Index.Tip.X + this.rightHand.Index.Tip.X) / 2,
+                        Y = (this.leftHand.Index.Tip.Y + this.rightHand.Index.Tip.Y) / 2
+                    };
+
+                    this.lastLeftLocation = this.leftHand.Index.Tip;
+                    this.lastRightLocation = this.rightHand.Index.Tip;
+
+                    win.ResizeWindow((int)(newDistance - oldDistance), new Point
+                    {
+                        X = 0,
+                        Y = 0
+                    });
+
+                    Console.WriteLine("diff:" + (oldDistance - newDistance).ToString());
+                }
+            }
+
+            if (this.rightHand != null)
+            {
+                if (this.status == Status.afterSpreadfingers)
+                {
+                    if (CalculateDistances(this.rightHand.Middle.Tip, this.lastRightLocation))
+                    {
+                        this.directionTimer.Stop();
+                        this.status = Status.none;
+                        Thread.Sleep(500);
+                    }
+                }
+                else if (this.rightHand.z < 0.4 && this.rightHand.Middle.Tip.X > 200 && this.rightHand.Middle.Tip.X < 450 && this.rightHand.Middle.Tip.Y > 150 && this.rightHand.Middle.Tip.Y < 300)
+                {
+                    if (this.rightHand.CountFingers() == 4 && this.status == Status.none)
+                    {
+                        this.status = Status.afterSpreadfingers;
+                        this.lastRightLocation = this.rightHand.Middle.Tip;
+                        Console.Beep(880, 300);
+                        this.directionTimer.Start();
+                    }
+                }
             }
 
             if (numberOfHands > 0)
             {
-                Console.WriteLine("L:{0} \t\t R:{1}",
-                        this.leftHand != null ? this.leftHand.Middle.Tip.ToString() + " - " + this.leftHand.CountFingers() : "\t\t",
-                        this.rightHand != null ? this.rightHand.Middle.Tip.ToString() + " - " + this.rightHand.CountFingers() + " z:" + this.rightHand.z : "\t\t");
+
+                //    Console.WriteLine("L:{0} \t\t R:{1}",
+                //            this.leftHand != null ? this.leftHand.Middle.Tip.ToString() + " - " + this.leftHand.CountFingers() : "\t\t",
+                //            this.rightHand != null ? this.rightHand.Middle.Tip.ToString() + " - " + this.rightHand.CountFingers() + " z:" + this.rightHand.z : "\t\t");
+
+
+                //Console.WriteLine("L:{0} \t\t R:{1}",
+                //        this.leftHand != null ? this.leftHand.Gestrue : "\t\t",
+                //        this.rightHand != null ? this.rightHand.Gestrue : "\t\t");
             }
         }
 
-        private Hand GetHandData(PXCMHandData.IHand currentHandData, ref Point lastLocation, ref Status status)
+        private Hand GetHandData(PXCMHandData.IHand currentHandData)
         {
             PXCMHandData.JointData jointData;
             currentHandData.QueryTrackedJoint(PXCMHandData.JointType.JOINT_CENTER, out jointData);
@@ -210,40 +320,47 @@ namespace IronManConsole
                 z = z
             };
 
-            if (status == Status.afterSpreadfingers )
-            {
-                var newX = hand.Middle.Tip.X;
-                var oldX = lastLocation.X;
-
-
-                if (Math.Abs(newX - oldX) >170)
-                {
-                    if (newX < oldX)
-                    {
-                        Console.WriteLine("Left");
-                        this.win.KeyLeft();
-                    }
-                    else
-                    {
-                        Console.WriteLine("Right");
-                        this.win.KeyRight();
-                    }
-
-                    status = Status.none;
-                    //Thread.Sleep(500);
-                }
-            }
-            else if (hand.z < 0.4 && hand.Middle.Tip.X > 200 && hand.Middle.Tip.X < 450 )
-            {
-                if (hand.CountFingers() == 4)
-                {
-                    Console.Beep();
-                    status = Status.afterSpreadfingers;
-                    lastLocation = hand.Middle.Tip;
-                }
-            }
-
             return hand;
+        }
+
+        private bool CalculateDistances(Point newLoc, Point oldLoc)
+        {
+            var diffX = Math.Abs(newLoc.X - oldLoc.X) + 70;
+            var diffY = Math.Abs(newLoc.Y - oldLoc.Y);
+
+            if (diffX > 220  && diffX > diffY)
+            {
+                if (newLoc.X < oldLoc.X)
+                {
+                    Console.WriteLine("Left");
+                    this.win.KeyLeft();
+                }
+                else
+                {
+                    Console.WriteLine("Right");
+                    this.win.KeyRight();
+                }
+
+                return true;
+                
+            }
+            else if (diffY > 100 && diffY >= diffX)
+            {
+                if (newLoc.Y < oldLoc.Y)
+                {
+                    Console.WriteLine("Up");
+                    this.win.KeyUp();
+                }
+                else
+                {
+                    Console.WriteLine("Down");
+                    //this.win.KeyDown();
+                }
+
+                return true;
+            }
+
+            return false;
         }
 
         private static Point GetPointFromJoint(PXCMHandData.IHand currentHandData, PXCMHandData.JointType jointType)
@@ -257,68 +374,6 @@ namespace IronManConsole
             {
                 X = x,
                 Y = y
-            };
-        }
-
-
-        //private void onFiredGesture(PXCMHandData.GestureData gestureData)
-        //{
-        //    PXCMHandData.IHand currentHandData;
-        //    //Console.WriteLine(gestureData.name + ": " + gestureData.state);
-
-        //    var hand = this.hands[gestureData.handId];
-
-        //    this._handData.QueryHandDataById(gestureData.handId, out currentHandData);
-        //    if (gestureData.state == PXCMHandData.GestureStateType.GESTURE_STATE_START)
-        //    {
-        //        if (gestureData.name == "spreadfingers")
-        //        {
-        //            if (hand.Status == Status.none)
-        //            {
-        //                Console.Beep();
-        //                hand.Status = Status.afterSpreadfingers;
-        //                this.waitingHands.TryAdd(gestureData.handId, hand);
-        //            }
-        //        }
-        //        else if (waitingHands.ContainsKey(gestureData.handId))
-        //        {
-        //            var waitingHand = this.waitingHands[gestureData.handId];
-        //            if (waitingHand.Status == Status.afterSpreadfingers)
-        //            {
-        //                switch (gestureData.name)
-        //                {
-        //                    case "swipe_up":
-
-        //                        //this.win.KeyUp();
-        //                        Console.WriteLine("Up");
-        //                        break;
-        //                    case "swipe_down":
-        //                        // this.win.KeyDown();
-        //                        Console.WriteLine("Down");
-        //                        break;
-        //                    case "full_fingers_pinch":
-        //                        waitingHand = hand;
-        //                        waitingHand.Status = Status.pinch;
-        //                        Console.WriteLine("pinch");
-        //                        break;
-        //                    default:
-        //                        break;
-        //                }
-
-        //                Hand x;
-        //                this.waitingHands.TryRemove(gestureData.handId,out x);
-        //            }
-
-        //            hand.Status = Status.none;
-        //        }
-        //    }
-        //}
-
-        private void onFiredAlert(PXCMHandData.AlertData alertData)
-        {
-            if (alertData.label == PXCMHandData.AlertType.ALERT_HAND_TRACKED)
-            {
-                //Console.WriteLine("STARTED");
             };
         }
 
