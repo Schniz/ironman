@@ -53,7 +53,7 @@ namespace IronManConsole
             get { return _status; }
             set { 
                 _status = value;
-                StatusChanged(this, new StatusEventArgs { status = _status });
+                OnStatusChanged(new StatusEventArgs { status = _status });
             }
         }
 
@@ -468,6 +468,15 @@ namespace IronManConsole
         {
             this._mngr.Dispose();
             this._session.Dispose();
+        }
+
+        protected virtual void OnStatusChanged(StatusEventArgs e)
+        {
+            EventHandler<StatusEventArgs> handler = StatusChanged;
+            if (handler != null)
+            {
+                handler(this, e);
+            }
         }
     }
 }
