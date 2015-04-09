@@ -243,22 +243,21 @@ namespace IronManConsole
                     {
                         this.pinchCounter = 0;
 
-                        //var oldDistance = Math.Sqrt(Math.Pow(this.lastLeftLocation.X - this.lastRightLocation.X, 2) + Math.Pow(this.lastLeftLocation.Y - this.lastRightLocation.Y, 2));
-                        //var newDistance = Math.Sqrt(Math.Pow(this.leftHand.Index.Center.X - this.rightHand.Index.Center.X, 2) + Math.Pow(this.leftHand.Index.Center.Y - this.rightHand.Index.Center.Y, 2));
+                        var oldDistance = Math.Sqrt(Math.Pow(this.lastLeftLocation.X - this.lastRightLocation.X, 2) + Math.Pow(this.lastLeftLocation.Y - this.lastRightLocation.Y, 2));
+                        var newDistance = Math.Sqrt(Math.Pow(this.leftHand.Index.Center.X - this.rightHand.Index.Center.X, 2) + Math.Pow(this.leftHand.Index.Center.Y - this.rightHand.Index.Center.Y, 2));
 
-                        //this.lastLeftLocation = this.leftHand.Index.Center;
-                        //this.lastRightLocation = this.rightHand.Index.Center;
+                        var distance = (int)(newDistance - oldDistance);
 
-                        //this.action.Pinch((int)(newDistance - oldDistance),new Point());
+                        this.action.Pinch(new Point() { X = distance, Y = distance });
 
-                        var oldDelta = calculateDelta(this.lastLeftLocation, this.lastRightLocation);
-                        var newDelta = calculateDelta(this.leftHand.Index.Center, this.rightHand.Index.Center);
+                        //var oldDelta = calculateDelta(this.lastLeftLocation, this.lastRightLocation);
+                        //var newDelta = calculateDelta(this.leftHand.Index.Center, this.rightHand.Index.Center);
 
-                        this.action.Pinch(new Point
-                        {
-                            X = newDelta.X - oldDelta.X,
-                            Y = newDelta.Y - oldDelta.Y
-                        });
+                        //this.action.Pinch(new Point
+                        //{
+                        //    X = newDelta.X - oldDelta.X,
+                        //    Y = newDelta.Y - oldDelta.Y
+                        //});
 
                         this.lastLeftLocation = this.leftHand.Index.Center;
                         this.lastRightLocation = this.rightHand.Index.Center;

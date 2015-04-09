@@ -17,6 +17,7 @@ namespace IronManConsole
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
             Main a = new Main();
+            a.Location = new Point(Screen.PrimaryScreen.WorkingArea.Width - a.Width, Screen.PrimaryScreen.WorkingArea.Height - a.Height);
             a.Load += delegate
             {
                 a.Location = new Point(Screen.PrimaryScreen.WorkingArea.Width - a.Width, Screen.PrimaryScreen.WorkingArea.Height - a.Height);

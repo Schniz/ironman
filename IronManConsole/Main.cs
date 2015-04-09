@@ -20,7 +20,7 @@ namespace IronManConsole
             cam = new Camera();
             cam.StatusChanged += cam_StatusChanged;
             cam.Start();
-            //this.ShowInTaskbar = false;
+            this.ShowInTaskbar = false;
             this.BackColor = Color.Black;
             this.TransparencyKey = Color.Black;
             this.TopMost = true;
@@ -33,38 +33,45 @@ namespace IronManConsole
 
         public void ChangeStatus(Status status)
         {
-            switch (status)
+            this.BeginInvoke(new MethodInvoker(delegate
+               {
+                   switch (status)
             {
                 case Status.afterSpreadfingers:
-                {
-                    this.hand.Visible = true;
-                    this.pinch.Visible = false;
-                    break;
-                }
+                    {
+                        this.hand.Visible = true;
+                        this.pinch.Visible = false;
+                        break;
+                    }
                 case Status.pinch:
-                {
-                    this.hand.Visible = false;
-                    this.pinch.Visible = true;
-                    break;
-                }
+                    {
+                        this.hand.Visible = false;
+                        this.pinch.Visible = true;
+                        break;
+                    }
                 case Status.none:
-                {
-                    this.hand.Visible = false;
-                    this.pinch.Visible = false;
-                    break;
-                }
+                    {
+                        this.hand.Visible = false;
+                        this.pinch.Visible = false;
+                        break;
+                    }
                 case Status.rock:
-                {
-                    this.hand.Visible = false;
-                    this.pinch.Visible = false;
-                    break;
-                }
+                    {
+                        this.hand.Visible = false;
+                        this.pinch.Visible = false;
+                        break;
+                    }
                 default:
-                {
-                    break;
-                }
-            }
+                    {
+                        break;
+                    }
+                   }
+               }));
+        }
 
+        protected override bool ShowWithoutActivation
+        {
+            get { return true; }
         }
     }
 }
