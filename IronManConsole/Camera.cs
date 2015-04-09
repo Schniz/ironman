@@ -248,6 +248,9 @@ namespace IronManConsole
 
                         var distance = (int)(newDistance - oldDistance);
 
+                        this.lastLeftLocation = this.leftHand.Index.Center;
+                        this.lastRightLocation = this.rightHand.Index.Center;
+
                         this.action.Pinch(new Point() { X = distance, Y = distance });
 
                         //var oldDelta = calculateDelta(this.lastLeftLocation, this.lastRightLocation);
@@ -258,9 +261,6 @@ namespace IronManConsole
                         //    X = newDelta.X - oldDelta.X,
                         //    Y = newDelta.Y - oldDelta.Y
                         //});
-
-                        this.lastLeftLocation = this.leftHand.Index.Center;
-                        this.lastRightLocation = this.rightHand.Index.Center;
                     }
 
 

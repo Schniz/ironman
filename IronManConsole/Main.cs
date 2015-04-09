@@ -69,9 +69,16 @@ namespace IronManConsole
                }));
         }
 
-        protected override bool ShowWithoutActivation
+
+        protected override CreateParams CreateParams
         {
-            get { return true; }
+            get
+            {
+                CreateParams cp = base.CreateParams;
+                // turn on WS_EX_TOOLWINDOW style bit
+                cp.ExStyle |= 0x80;
+                return cp;
+            }
         }
     }
 }
