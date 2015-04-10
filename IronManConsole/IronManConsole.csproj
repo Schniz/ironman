@@ -66,8 +66,10 @@
   <ItemGroup>
     <Compile Include="Action.cs" />
     <Compile Include="Camera.cs" />
+    <Compile Include="CameraUtils.cs" />
     <Compile Include="Finger.cs" />
     <Compile Include="Hand.cs" />
+    <Compile Include="JointTypesForFinger.cs" />
     <Compile Include="Main.cs">
       <SubType>Form</SubType>
     </Compile>

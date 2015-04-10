@@ -15,20 +15,43 @@ namespace IronManConsole
         public Finger Ring { get; set; }
         public Finger Pinky { get; set; }
 
+        public static Hand FromHandData(PXCMHandData.IHand handData)
+        {
+            Hand hand = new Hand();
+
+            return null;
+        }
+
+        public IEnumerable<Finger> Fingers
+        {
+            get
+            {
+                yield return Thumb;
+                yield return Index;
+                yield return Middle;
+                yield return Ring;
+                yield return Pinky;
+            }
+        }
+
+        public IEnumerable<Finger> FingersWithoutThumb
+        {
+            get
+            {
+                yield return Index;
+                yield return Middle;
+                yield return Ring;
+                yield return Pinky;
+            }
+        }
+
         public string Gestrue { get; set; }
 
         public float z { get; set; }
 
         public int CountFingers()
         {
-            int fingers = 4;
-
-            if (Index.IsFingerFolded()) fingers--;
-            if (Middle.IsFingerFolded()) fingers--;
-            if (Ring.IsFingerFolded()) fingers--;
-            if (Pinky.IsFingerFolded()) fingers--;
-
-            return fingers;
+            return this.FingersWithoutThumb.Count(finger => finger.IsFingerFolded());
         }
 
         public bool IsRock()
