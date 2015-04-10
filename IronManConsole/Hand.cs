@@ -22,17 +22,26 @@ namespace IronManConsole
             return null;
         }
 
-        public Finger[] Fingers
+        public IEnumerable<Finger> Fingers
         {
             get
             {
-                return new Finger[] {
-                    this.Thumb,
-                    this.Index,
-                    this.Middle,
-                    this.Ring,
-                    this.Pinky
-                };
+                yield return Thumb;
+                yield return Index;
+                yield return Middle;
+                yield return Ring;
+                yield return Pinky;
+            }
+        }
+
+        public IEnumerable<Finger> FingersWithoutThumb
+        {
+            get
+            {
+                yield return Index;
+                yield return Middle;
+                yield return Ring;
+                yield return Pinky;
             }
         }
 
@@ -42,14 +51,7 @@ namespace IronManConsole
 
         public int CountFingers()
         {
-            int fingers = 4;
-
-            if (Index.IsFingerFolded()) fingers--;
-            if (Middle.IsFingerFolded()) fingers--;
-            if (Ring.IsFingerFolded()) fingers--;
-            if (Pinky.IsFingerFolded()) fingers--;
-
-            return fingers;
+            return this.FingersWithoutThumb.Count(finger => finger.IsFingerFolded());
         }
 
         public bool IsRock()
