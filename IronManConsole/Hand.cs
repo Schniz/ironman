@@ -15,6 +15,27 @@ namespace IronManConsole
         public Finger Ring { get; set; }
         public Finger Pinky { get; set; }
 
+        public static Hand FromHandData(PXCMHandData.IHand handData)
+        {
+            Hand hand = new Hand();
+
+            return null;
+        }
+
+        public Finger[] Fingers
+        {
+            get
+            {
+                return new Finger[] {
+                    this.Thumb,
+                    this.Index,
+                    this.Middle,
+                    this.Ring,
+                    this.Pinky
+                };
+            }
+        }
+
         public string Gestrue { get; set; }
 
         public float z { get; set; }

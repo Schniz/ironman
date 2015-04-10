@@ -23,9 +23,9 @@ namespace IronManConsole
     }
     public class Camera
     {
-        const int WIDTH = 640;
-        const int HEIGHT = 480;
-        const int MAX_ROCK_FRAMES = 20;
+        public const int WIDTH = 640;
+        public const int HEIGHT = 480;
+        public const int MAX_ROCK_FRAMES = 20;
 
         private System.Timers.Timer directionTimer;
         private System.Timers.Timer pinchTimer;
@@ -192,12 +192,12 @@ namespace IronManConsole
 
                 if (side == PXCMHandData.BodySideType.BODY_SIDE_RIGHT)
                 {
-                    this.rightHand = GetHandData(currentHandData);
+                    this.rightHand = CameraUtils.GetHandFromData(currentHandData);
                     hand = this.rightHand;
                 }
                 else if (side == PXCMHandData.BodySideType.BODY_SIDE_LEFT)
                 {
-                    this.leftHand = GetHandData(currentHandData);
+                    this.leftHand = CameraUtils.GetHandFromData(currentHandData);
                     hand = this.leftHand;
                 }
                 else
@@ -353,62 +353,6 @@ namespace IronManConsole
             };
         }
 
-        private Hand GetHandData(PXCMHandData.IHand currentHandData)
-        {
-            PXCMHandData.JointData jointData;
-            currentHandData.QueryTrackedJoint(PXCMHandData.JointType.JOINT_CENTER, out jointData);
-            var positionImage = jointData.positionWorld;
-            float z = positionImage.z;
-
-            var center = GetPointFromJoint(currentHandData, PXCMHandData.JointType.JOINT_CENTER);
-            Hand hand = new Hand
-            {
-                Thumb = new Finger
-                {
-                    Tip = GetPointFromJoint(currentHandData, PXCMHandData.JointType.JOINT_THUMB_TIP),
-                    BelowTip = GetPointFromJoint(currentHandData, PXCMHandData.JointType.JOINT_THUMB_JT2),
-                    AboveBase = GetPointFromJoint(currentHandData, PXCMHandData.JointType.JOINT_THUMB_JT1),
-                    Base = GetPointFromJoint(currentHandData, PXCMHandData.JointType.JOINT_THUMB_BASE),
-                    Center = center
-                },
-                Index = new Finger
-                {
-                    Tip = GetPointFromJoint(currentHandData, PXCMHandData.JointType.JOINT_INDEX_TIP),
-                    BelowTip = GetPointFromJoint(currentHandData, PXCMHandData.JointType.JOINT_INDEX_JT2),
-                    AboveBase = GetPointFromJoint(currentHandData, PXCMHandData.JointType.JOINT_INDEX_JT1),
-                    Base = GetPointFromJoint(currentHandData, PXCMHandData.JointType.JOINT_INDEX_BASE),
-                    Center = center
-                },
-                Middle = new Finger
-                {
-                    Tip = GetPointFromJoint(currentHandData, PXCMHandData.JointType.JOINT_MIDDLE_TIP),
-                    BelowTip = GetPointFromJoint(currentHandData, PXCMHandData.JointType.JOINT_MIDDLE_JT2),
-                    AboveBase = GetPointFromJoint(currentHandData, PXCMHandData.JointType.JOINT_MIDDLE_JT1),
-                    Base = GetPointFromJoint(currentHandData, PXCMHandData.JointType.JOINT_MIDDLE_BASE),
-                    Center = center
-                },
-                Ring = new Finger
-                {
-                    Tip = GetPointFromJoint(currentHandData, PXCMHandData.JointType.JOINT_RING_TIP),
-                    BelowTip = GetPointFromJoint(currentHandData, PXCMHandData.JointType.JOINT_RING_JT2),
-                    AboveBase = GetPointFromJoint(currentHandData, PXCMHandData.JointType.JOINT_RING_JT1),
-                    Base = GetPointFromJoint(currentHandData, PXCMHandData.JointType.JOINT_RING_BASE),
-                    Center = center
-                },
-                Pinky = new Finger
-                {
-                    Tip = GetPointFromJoint(currentHandData, PXCMHandData.JointType.JOINT_PINKY_TIP),
-                    BelowTip = GetPointFromJoint(currentHandData, PXCMHandData.JointType.JOINT_PINKY_JT2),
-                    AboveBase = GetPointFromJoint(currentHandData, PXCMHandData.JointType.JOINT_PINKY_JT1),
-                    Base = GetPointFromJoint(currentHandData, PXCMHandData.JointType.JOINT_PINKY_BASE),
-                    Center = center
-                },
-                z = z
-            };
-
-            return hand;
-        }
-
         private bool CalculateDistances(Point newLoc, Point oldLoc)
         {
             var diffX = Math.Abs(newLoc.X - oldLoc.X) + 70;
@@ -447,20 +391,6 @@ namespace IronManConsole
             }
 
             return false;
-        }
-
-        private static Point GetPointFromJoint(PXCMHandData.IHand currentHandData, PXCMHandData.JointType jointType)
-        {
-            PXCMHandData.JointData jointData;
-            currentHandData.QueryTrackedJoint(jointType, out jointData);
-            var positionImage = jointData.positionImage;
-            int x = (int)(WIDTH - positionImage.x);
-            int y = (int)positionImage.y;
-            return new Point
-            {
-                X = x,
-                Y = y
-            };
         }
 
         ~Camera()
